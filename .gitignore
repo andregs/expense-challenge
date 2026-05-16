@@ -1,1 +1,50 @@
+# Local-only / IDE
+.vscode/
+.idea/
+.DS_Store
+*.iml
+*.swp
+
+# Interview materials (not for public repo)
 docs/
+
+# Node / pnpm / turbo
+node_modules/
+.pnpm-store/
+.turbo/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build artefacts
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Generated code
+packages/api-contract/generated/
+playwright-report/
+test-results/
+
+# Java / Gradle
+.gradle/
+backend/build/
+backend/bin/
+backend/.gradle/
+*.class
+hs_err_pid*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db

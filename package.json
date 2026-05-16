@@ -1,0 +1,27 @@
+{
+  "name": "expense-challenge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Full-stack reference app for tracking USD purchases with multi-currency conversion via US Treasury Reporting Rates of Exchange.",
+  "license": "MIT",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "generate": "turbo run generate",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,scss}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml,scss}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.14",
+    "typescript": "^6.0.3"
+  }
+}

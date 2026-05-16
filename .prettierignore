@@ -1,0 +1,13 @@
+node_modules
+.next
+.turbo
+dist
+build
+coverage
+packages/api-contract/generated
+backend/build
+backend/.gradle
+playwright-report
+test-results
+pnpm-lock.yaml
+README.md
