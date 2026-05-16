@@ -1,0 +1,29 @@
+{
+  "name": "@expense-challenge/api-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI 3.1 contract for the Expense Tracker API and generated TypeScript types.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./generated/types.ts",
+  "types": "./generated/types.ts",
+  "exports": {
+    ".": "./generated/types.ts",
+    "./openapi.yaml": "./openapi.yaml"
+  },
+  "files": [
+    "openapi.yaml",
+    "generated"
+  ],
+  "scripts": {
+    "generate": "openapi-typescript ./openapi.yaml -o ./generated/types.ts",
+    "build": "pnpm generate",
+    "lint": "echo \"(api-contract has no source to lint)\"",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"(api-contract has no tests)\""
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^6.0.3"
+  }
+}
