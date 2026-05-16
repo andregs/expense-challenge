@@ -1,0 +1,13 @@
+spring:
+  flyway:
+    enabled: true
+
+outbox:
+  relay:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.example.expensechallenge: INFO
+    org.springframework.web: WARN
