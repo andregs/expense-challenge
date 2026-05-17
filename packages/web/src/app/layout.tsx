@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { QueryProviders } from '@/lib/QueryProviders';
 import { MockingProvider } from '@/mocks/MockingProvider';
-import './globals.css';
+import '@/design-system/styles/index.scss';
 
 export const metadata: Metadata = {
   title: 'Expense Tracker',

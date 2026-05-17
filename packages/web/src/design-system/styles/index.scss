@@ -1,0 +1,6 @@
+// Single entry imported by `RootLayout`. Brings in design tokens (as :root
+// CSS custom properties) and the global reset. Component styles live in
+// per-component *.module.scss files and are scoped by the bundler.
+
+@use 'tokens';
+@use 'reset';
