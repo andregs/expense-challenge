@@ -1,10 +1,28 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@expense-challenge/api-contract';
 import { apiClient } from '@/lib/api-client';
 
 export type TransactionPage = components['schemas']['TransactionPage'];
+export type Transaction = components['schemas']['Transaction'];
+export type CreateTransactionRequest = components['schemas']['CreateTransactionRequest'];
+export type Problem = components['schemas']['Problem'];
+
+/**
+ * Error thrown by {@link useCreateTransaction} when the API rejects the
+ * payload. Carries the RFC 7807 problem document verbatim so the form can
+ * surface field-level messages from `problem.errors`.
+ */
+export class TransactionApiError extends Error {
+  constructor(
+    public readonly problem: Problem,
+    public readonly httpStatus: number,
+  ) {
+    super(problem.title);
+    this.name = 'TransactionApiError';
+  }
+}
 
 export const transactionsQueryKey = (page: number, size: number) =>
   ['transactions', { page, size }] as const;
@@ -31,5 +49,24 @@ export function useTransactionsPage(page = 0, size = 20) {
     //       component once MSW supports a Node.js service-worker equivalent,
     //       eliminating the pending-state flash in production.
     enabled: typeof window !== 'undefined',
+  });
+}
+
+/**
+ * Posts a new transaction. On success invalidates the listing cache so the
+ * dashboard and ledger refetch on next render. On 4xx/5xx throws a
+ * {@link TransactionApiError} carrying the parsed problem document.
+ */
+export function useCreateTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CreateTransactionRequest): Promise<Transaction> => {
+      const result = await apiClient.POST('/api/v1/transactions', { body });
+      if (result.error) {
+        throw new TransactionApiError(result.error, result.response.status);
+      }
+      return result.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }

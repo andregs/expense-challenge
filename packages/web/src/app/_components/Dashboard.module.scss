@@ -56,3 +56,14 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+.cta {
+  font-size: var(--type-sm);
+  font-weight: 600;
+  color: var(--color-primary-600);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
