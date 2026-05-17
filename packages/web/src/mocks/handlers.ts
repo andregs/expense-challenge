@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, type HttpResponseResolver } from 'msw';
 import { fixtures } from './data';
 import { selectVariant } from './scenarios';
 
@@ -6,66 +6,102 @@ const problemHeaders = { 'Content-Type': 'application/problem+json' };
 
 const { transactions: tx, problems } = fixtures;
 
+type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
+type Resolver = HttpResponseResolver;
+
+interface RouteSpec<V extends Record<string, Resolver>> {
+  method: HttpMethod;
+  path: string;
+  variants: V;
+  default: keyof V & string;
+}
+
 /**
- * Each handler maps {@link selectVariant} over a static variant table. To
- * change which variant is returned, pass `?test_scenario=<handler>:<variant>`
- * on the page URL. The API client forwards the query as the
- * `X-Test-Scenario` request header.
+ * Each route is declared once with its full variant table and a default
+ * pick. From a single declaration we derive two surfaces:
  *
- * The `*` prefix in each path matcher lets handlers fire regardless of
- * origin so the same setup works whether the API client is hitting Next's
- * `/api/*` rewrite, an absolute URL via `NEXT_PUBLIC_API_BASE_URL`, or the
- * Vitest jsdom default origin.
+ *   1. `handlers` — one MSW handler per route that defers variant selection
+ *      to {@link selectVariant} on the `X-Test-Scenario` request header.
+ *      Used by dev (browser worker) and by tests that want the default
+ *      behaviour.
+ *
+ *   2. `mockHandlers` — a route → variant → MSW handler map. Tests reach
+ *      for `server.use(mockHandlers.createTransaction.validationError)` to
+ *      pin a specific response without re-declaring path/method/body.
  */
-export const handlers = [
-  http.get('*/api/v1/transactions', ({ request }) =>
-    selectVariant(
-      request,
-      'listTransactions',
-      {
-        happy: () => HttpResponse.json(tx.samplePage),
-        empty: () => HttpResponse.json(tx.emptyPage),
-        serverError: () =>
-          HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
+const routes = {
+  listTransactions: {
+    method: 'get',
+    path: '*/api/v1/transactions',
+    variants: {
+      happy: () => HttpResponse.json(tx.samplePage),
+      empty: () => HttpResponse.json(tx.emptyPage),
+      serverError: () =>
+        HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
+    },
+    default: 'happy',
+  },
+  createTransaction: {
+    method: 'post',
+    path: '*/api/v1/transactions',
+    variants: {
+      happy: () =>
+        HttpResponse.json(tx.singleTransaction, {
+          status: 201,
+          headers: { Location: `/api/v1/transactions/${tx.singleTransaction.id}` },
+        }),
+      validationError: () =>
+        HttpResponse.json(problems.validation, { status: 400, headers: problemHeaders }),
+      serverError: () =>
+        HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
+    },
+    default: 'happy',
+  },
+  getTransaction: {
+    method: 'get',
+    path: '*/api/v1/transactions/:id',
+    variants: {
+      happy: ({ request }) => {
+        const currency = new URL(request.url).searchParams.get('currency');
+        return HttpResponse.json(currency ? tx.sampleConverted : tx.singleTransaction);
       },
-      'happy',
-    ),
-  ),
+      notFound: () =>
+        HttpResponse.json(problems.notFound, { status: 404, headers: problemHeaders }),
+      unconvertible: () =>
+        HttpResponse.json(problems.unprocessable, { status: 422, headers: problemHeaders }),
+      serverError: () =>
+        HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
+    },
+    default: 'happy',
+  },
+} as const satisfies Record<string, RouteSpec<Record<string, Resolver>>>;
 
-  http.post('*/api/v1/transactions', ({ request }) =>
-    selectVariant(
-      request,
-      'createTransaction',
-      {
-        happy: () =>
-          HttpResponse.json(tx.singleTransaction, {
-            status: 201,
-            headers: { Location: `/api/v1/transactions/${tx.singleTransaction.id}` },
-          }),
-        validationError: () =>
-          HttpResponse.json(problems.validation, { status: 400, headers: problemHeaders }),
-        serverError: () =>
-          HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
-      },
-      'happy',
-    ),
-  ),
+type Routes = typeof routes;
 
-  http.get('*/api/v1/transactions/:id', ({ request }) => {
-    const currency = new URL(request.url).searchParams.get('currency');
-    return selectVariant(
-      request,
-      'getTransaction',
-      {
-        happy: () => HttpResponse.json(currency ? tx.sampleConverted : tx.singleTransaction),
-        notFound: () =>
-          HttpResponse.json(problems.notFound, { status: 404, headers: problemHeaders }),
-        unconvertible: () =>
-          HttpResponse.json(problems.unprocessable, { status: 422, headers: problemHeaders }),
-        serverError: () =>
-          HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
-      },
-      'happy',
-    );
+export const handlers = Object.entries(routes).map(([name, route]) =>
+  http[route.method](route.path, (info) => {
+    const variant = selectVariant(info.request, name, route.variants, route.default);
+    return variant(info);
   }),
-];
+);
+
+/**
+ * Per-route, per-variant standalone handlers. Each one matches the same
+ * path/method as its scenario-aware sibling but unconditionally returns the
+ * named variant — handy for `server.use(...)` in tests.
+ */
+export const mockHandlers = Object.fromEntries(
+  Object.entries(routes).map(([name, route]) => [
+    name,
+    Object.fromEntries(
+      Object.entries(route.variants).map(([variant, resolver]) => [
+        variant,
+        http[route.method](route.path, resolver),
+      ]),
+    ),
+  ]),
+) as {
+  [K in keyof Routes]: {
+    [V in keyof Routes[K]['variants']]: ReturnType<(typeof http)[Routes[K]['method']]>;
+  };
+};

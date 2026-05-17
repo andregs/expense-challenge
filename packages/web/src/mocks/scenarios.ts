@@ -33,24 +33,26 @@ export function parseScenarioHeader(value: string | null | undefined): Map<strin
 }
 
 /**
- * Picks a variant for `handlerName` based on the request's
+ * Picks a variant resolver for `handlerName` based on the request's
  * `X-Test-Scenario` header, falling back to `defaultVariant` when the
  * header is missing the entry or names a variant outside `variants`.
+ * Returns the resolver itself so the caller can invoke it with the full
+ * MSW resolver context (request, params, cookies, …).
  */
-export function selectVariant<TVariants extends Record<string, () => Response>>(
+export function selectVariant<TVariants extends Record<string, unknown>>(
   request: Request,
   handlerName: string,
   variants: TVariants,
   defaultVariant: keyof TVariants & string,
-): Response {
+): TVariants[keyof TVariants & string] {
   const header = request.headers.get(TEST_SCENARIO_HEADER);
   const map = parseScenarioHeader(header);
   const requested = map.get(handlerName);
   const variant: keyof TVariants & string =
     requested && requested in variants ? requested : defaultVariant;
-  const handler = variants[variant];
-  if (!handler) {
+  const resolver = variants[variant];
+  if (!resolver) {
     throw new Error(`Missing scenario "${variant}" for mock handler "${handlerName}"`);
   }
-  return handler();
+  return resolver;
 }
