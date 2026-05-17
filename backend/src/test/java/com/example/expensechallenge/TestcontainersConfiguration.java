@@ -8,8 +8,14 @@ import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+/**
+ * Spring closes each container on context shutdown via the default
+ * {@code AutoCloseable.close()} hook on {@link org.springframework.context.annotation.Bean @Bean},
+ * so the IDE's "try-with-resources" inspection is a false positive here.
+ */
+@SuppressWarnings("resource")
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
 	@Bean
 	@ServiceConnection
