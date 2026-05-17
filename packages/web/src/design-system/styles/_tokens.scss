@@ -37,6 +37,8 @@
   // Surfaces
   --color-bg: var(--color-neutral-50);
   --color-surface: var(--color-neutral-0);
+  --color-surface-muted: var(--color-neutral-100);
+  --color-hover: var(--color-neutral-100);
   --color-border: var(--color-neutral-200);
   --color-text: var(--color-neutral-900);
   --color-text-muted: var(--color-neutral-500);
@@ -93,6 +95,8 @@
   :root {
     --color-bg: var(--color-neutral-900);
     --color-surface: var(--color-neutral-800);
+    --color-surface-muted: var(--color-neutral-800);
+    --color-hover: var(--color-neutral-700);
     --color-border: var(--color-neutral-700);
     --color-text: var(--color-neutral-50);
     --color-text-muted: var(--color-neutral-400);

@@ -36,12 +36,12 @@
 }
 
 .secondary {
-  background: var(--color-neutral-0);
-  color: var(--color-neutral-900);
+  background: var(--color-surface);
+  color: var(--color-text);
   border-color: var(--color-border);
 
   &:hover:not(:disabled) {
-    background: var(--color-neutral-100);
+    background: var(--color-hover);
   }
 }
 

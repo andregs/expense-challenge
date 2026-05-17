@@ -17,7 +17,7 @@
   }
 
   thead th {
-    background: var(--color-neutral-100);
+    background: var(--color-surface-muted);
     font-weight: 600;
     color: var(--color-text-muted);
     text-transform: uppercase;
@@ -30,7 +30,7 @@
   }
 
   tbody tr:hover {
-    background: var(--color-neutral-50);
+    background: var(--color-hover);
   }
 }
 
