@@ -10,9 +10,10 @@ const isEnabled = process.env.NEXT_PUBLIC_API_MOCKING === 'enabled';
  * ready so initial requests are intercepted; when mocking is off the
  * provider is a pass-through.
  *
- * Unhandled requests use MSW's default `warn` behaviour — drift between
- * the OpenAPI spec and handler coverage surfaces in the browser console
- * rather than silently leaking out.
+ * Only `/api/*` requests without a matching handler emit a console
+ * warning. Everything else (Next.js HMR WebSockets, RSC fetches,
+ * static assets, page navigations) is silently bypassed so the dev
+ * console stays clean while API drift still surfaces immediately.
  */
 export function MockingProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!isEnabled);
@@ -23,7 +24,11 @@ export function MockingProvider({ children }: { children: ReactNode }) {
     cancelledRef.current = false;
     void (async () => {
       const { worker } = await import('./browser');
-      await worker.start();
+      await worker.start({
+        onUnhandledRequest(request, print) {
+          if (new URL(request.url).pathname.startsWith('/api/')) print.warning();
+        },
+      });
       if (!cancelledRef.current) setReady(true);
     })();
     return () => {
