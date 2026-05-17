@@ -11,3 +11,4 @@ playwright-report
 test-results
 pnpm-lock.yaml
 README.md
+packages/web/public
