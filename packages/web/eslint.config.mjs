@@ -14,6 +14,7 @@ const config = defineConfig([
     '.next/**',
     'out/**',
     'build/**',
+    'coverage/**',
     'next-env.d.ts',
     'public/mockServiceWorker.js',
   ]),

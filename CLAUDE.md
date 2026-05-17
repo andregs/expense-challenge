@@ -29,6 +29,7 @@ pnpm build          # turbo run build across all packages
 pnpm lint
 pnpm typecheck
 pnpm test           # JS/TS tests only (backend uses gradle)
+pnpm test:coverage  # Vitest with v8 coverage, enforces thresholds in vitest.config.ts
 pnpm test:e2e       # Playwright
 pnpm generate       # regenerates api-contract TS types from openapi.yaml
 pnpm format         # prettier write
