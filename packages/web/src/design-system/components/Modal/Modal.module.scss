@@ -1,0 +1,22 @@
+.dialog {
+  // Reset the native dialog cosmetic defaults.
+  margin: auto;
+  padding: var(--space-6);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  max-width: 32rem;
+  width: calc(100% - 2 * var(--space-4));
+
+  &::backdrop {
+    background: rgba(15, 23, 42, 0.5);
+  }
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--type-xl);
+  font-weight: 600;
+}
