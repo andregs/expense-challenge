@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api-client';
 
 export type TransactionPage = components['schemas']['TransactionPage'];
 export type Transaction = components['schemas']['Transaction'];
+export type ConvertedTransaction = components['schemas']['ConvertedTransaction'];
 export type CreateTransactionRequest = components['schemas']['CreateTransactionRequest'];
 export type Problem = components['schemas']['Problem'];
 
@@ -48,6 +49,36 @@ export function useTransactionsPage(page = 0, size = 20) {
     // TODO: replace with HydrationBoundary + prefetchQuery on the server
     //       component once MSW supports a Node.js service-worker equivalent,
     //       eliminating the pending-state flash in production.
+    enabled: typeof window !== 'undefined',
+  });
+}
+
+/**
+ * Fetches a single transaction by id. When `currency` is supplied the API
+ * returns a {@link ConvertedTransaction} enriched with `exchangeRate`,
+ * `convertedAmount` and `rateDate`. On 4xx/5xx throws a
+ * {@link TransactionApiError} so callers can distinguish 404 (not found)
+ * from 422 (no qualifying rate within the prior 6 months).
+ *
+ * Pass `enabled = false` to keep the hook mounted but dormant (e.g. the
+ * conversion query before the user has picked a currency).
+ */
+export function useGetTransaction(id: string, currency?: string) {
+  return useQuery({
+    queryKey: ['transaction', id, currency],
+    queryFn: async (): Promise<Transaction | ConvertedTransaction> => {
+      const { data, error, response } = await apiClient.GET('/api/v1/transactions/{id}', {
+        params: {
+          path: { id },
+          query: currency ? { currency } : {},
+        },
+      });
+      if (error) throw new TransactionApiError(error, response.status);
+      return data;
+    },
+    // Keep previous key's data visible while re-fetching (e.g. currency change)
+    // so the transaction header stays populated during the conversion request.
+    placeholderData: (prev) => prev,
     enabled: typeof window !== 'undefined',
   });
 }

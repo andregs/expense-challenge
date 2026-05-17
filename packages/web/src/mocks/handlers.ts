@@ -67,8 +67,11 @@ const routes = {
       },
       notFound: () =>
         HttpResponse.json(problems.notFound, { status: 404, headers: problemHeaders }),
-      unconvertible: () =>
-        HttpResponse.json(problems.unprocessable, { status: 422, headers: problemHeaders }),
+      unconvertible: ({ request }) => {
+        const currency = new URL(request.url).searchParams.get('currency');
+        if (!currency) return HttpResponse.json(tx.singleTransaction);
+        return HttpResponse.json(problems.unprocessable, { status: 422, headers: problemHeaders });
+      },
       serverError: () =>
         HttpResponse.json(problems.serverError, { status: 500, headers: problemHeaders }),
     },
