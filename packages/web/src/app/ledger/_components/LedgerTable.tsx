@@ -1,32 +1,36 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Card, Table } from '@/design-system';
 import { formatIsoDate, formatUsd } from '@/lib/format';
 import { useTransactionsPage } from '@/lib/queries/transactions';
-import styles from './Dashboard.module.scss';
+import { Pagination } from './Pagination';
+import styles from './Ledger.module.scss';
 
-export function RecentTransactions() {
-  const { data, isPending, isError } = useTransactionsPage(0, 5);
+const PAGE_SIZE = 10;
+
+export function LedgerTable() {
+  const searchParams = useSearchParams();
+  const rawPage = Number(searchParams.get('page') ?? '0');
+  const page = Number.isNaN(rawPage) ? 0 : Math.max(0, rawPage);
+  const { data, isPending, isError } = useTransactionsPage(page, PAGE_SIZE);
+
+  const subtitle = data ? `${data.totalElements.toString()} total` : undefined;
 
   return (
-    <Card
-      title="Recent transactions"
-      subtitle={
-        <>
-          Latest 5 across the ledger &mdash;{' '}
-          <Link className={styles.cta} href="/ledger">
-            View all →
-          </Link>
-        </>
-      }
-    >
-      <RecentTransactionsBody data={data} isPending={isPending} isError={isError} />
+    <Card title="Transactions" subtitle={subtitle}>
+      <LedgerBody data={data} isPending={isPending} isError={isError} />
+      {data && data.totalPages > 1 ? (
+        <div className={styles.paginationWrapper}>
+          <Pagination page={page} totalPages={data.totalPages} />
+        </div>
+      ) : null}
     </Card>
   );
 }
 
-function RecentTransactionsBody({
+function LedgerBody({
   data,
   isPending,
   isError,
@@ -41,7 +45,7 @@ function RecentTransactionsBody({
     return <p className={styles.empty}>No transactions recorded yet.</p>;
 
   return (
-    <Table caption="Recent transactions">
+    <Table caption="All transactions">
       <thead>
         <tr>
           <th scope="col">Date</th>
@@ -53,9 +57,13 @@ function RecentTransactionsBody({
       </thead>
       <tbody>
         {data.items.map((tx) => (
-          <tr key={tx.id}>
+          <tr key={tx.id} className={styles.row}>
             <td>{formatIsoDate(tx.transactionDate)}</td>
-            <td>{tx.description}</td>
+            <td>
+              <Link href={`/transactions/${tx.id}`} className={styles.rowLink}>
+                {tx.description}
+              </Link>
+            </td>
             <td className={styles.cellAmount}>{formatUsd(tx.purchaseAmountUsd)}</td>
           </tr>
         ))}
