@@ -1,0 +1,22 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.label {
+  font-size: var(--type-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.hint {
+  font-size: var(--type-xs);
+  color: var(--color-text-muted);
+}
+
+.error {
+  font-size: var(--type-xs);
+  color: var(--color-danger);
+}
