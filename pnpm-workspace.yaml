@@ -1,2 +1,9 @@
 packages:
   - 'packages/*'
+
+# Approve native build scripts for trusted transitive deps so `pnpm install`
+# can compile them. Without this, pnpm 11 flags each one as ignored.
+allowBuilds:
+  '@parcel/watcher': true
+  sharp: true
+  unrs-resolver: true

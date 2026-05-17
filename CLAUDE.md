@@ -1,0 +1,72 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+Full-stack expense tracker. Backend stores USD purchase transactions; GET endpoint converts to any currency reported by the US Treasury Reporting Rates of Exchange. See `docs/solution-design.md` for the canonical design narrative and `docs/job-positions/code-challenge.md` for the requirements being satisfied.
+
+## Repo layout (monorepo)
+
+- `backend/` — Spring Boot 4 service (Gradle Kotlin DSL). Package root `com.example.expensechallenge`.
+- `packages/api-contract/` — `openapi.yaml` (single source of truth) + `generated/types.ts` produced by `openapi-typescript`.
+- `packages/web/` — Next.js 16 (App Router, src/ layout, `@/*` alias, no Tailwind). React 19, TypeScript 6 strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, …). ESLint v9 flat config extends `eslint-config-next` with `typescript-eslint` strictTypeChecked + stylisticTypeChecked, `import-x`, `unicorn`, `promise`, `vitest` (test files only), `playwright` (e2e files only), `eslint-config-prettier` last. SCSS via `sass`. The in-app design system folder and MSW wiring land in subsequent commits.
+- `docs/` — solution design, code challenge brief, job descriptions.
+
+pnpm workspaces + Turborepo at root. Backend is its own Gradle build, invoked directly (not via Turbo).
+
+## Common commands
+
+Root (pnpm + turbo):
+
+```bash
+pnpm install
+pnpm build          # turbo run build across all packages
+pnpm lint
+pnpm typecheck
+pnpm test           # JS/TS tests only (backend uses gradle)
+pnpm test:e2e       # Playwright
+pnpm generate       # regenerates api-contract TS types from openapi.yaml
+pnpm format         # prettier write
+pnpm format:check
+```
+
+Single package: `pnpm --filter @expense-challenge/<name> <script>`.
+
+Backend (from `backend/`):
+
+```bash
+./gradlew bootRun
+./gradlew test
+./gradlew test --tests "com.example.expensechallenge.persistence.PersistenceIntegrationTest"
+./gradlew test --tests "*PersistenceIntegrationTest.methodName"
+./gradlew build      # compile + test + jar
+```
+
+Backend tests rely on Testcontainers (Docker daemon required) — see `TestcontainersConfiguration.java` and `TestExpenseChallengeApplication.java` for the shared container setup loaded via `@ServiceConnection`.
+
+## Toolchain
+
+Pinned in `.tool-versions` (use `asdf install`):
+- nodejs 25.9.0, pnpm 11.1.2, java openjdk-25.
+- Spring Boot 4.0.6, Spring Framework 7. Java toolchain set to 25 in `backend/build.gradle.kts`.
+- Virtual threads enabled (`spring.threads.virtual.enabled=true`).
+
+## Architecture essentials
+
+- **Persistence**: Spring Data JDBC (no JPA). Repositories under `infrastructure/persistence`. Domain records (`PurchaseTransaction`, `OutboxEvent`) under `domain/`. Schema in `src/main/resources/db/migration/V*.sql` (Flyway). UUIDs generated DB-side via `gen_random_uuid()`.
+- **Money**: `BigDecimal` end-to-end, `NUMERIC(19,4)` in Postgres, `HALF_UP` rounding to 2dp only at response boundary.
+- **Transactional outbox**: writes to `purchase_transactions` and `outbox_events` (status `PENDING`) happen in the same DB tx. Scheduled relay (`outbox.relay.*` config) publishes to Kafka topic `purchase.transactions.created` then flips to `PUBLISHED`. Outbox payload is plain TEXT (no JSONB) — never queried by content.
+- **FX lookup rule**: most recent Treasury rate with `record_date ≤ transactionDate` and within prior 6 months. No qualifying rate → `422 Unprocessable Entity`.
+- **FX cache**: Redis cache-aside, long TTL (rates immutable once published). Key pattern `fx_rate:{currency}:{year}:{quarter}` (see solution design).
+- **Treasury client**: base URL + timeouts under `treasury.*` config; WireMock used in tests.
+- **API contract first**: edit `packages/api-contract/openapi.yaml`, then `pnpm --filter @expense-challenge/api-contract generate` to refresh TS types. Backend controllers and frontend types both bind to this spec.
+
+## Conventions
+
+- Spring profile `test` loads `src/test/resources/application-test.yml`.
+- Actuator exposes `health,info,metrics,prometheus`. Swagger UI at `/swagger-ui.html`, OpenAPI JSON at `/v3/api-docs`.
+- Do not introduce JPA, Hibernate, or an ORM — persistence is intentionally explicit SQL via Spring Data JDBC + `NamedParameterJdbcTemplate`.
+- New Spring Boot modules: scaffold via [start.spring.io](https://start.spring.io), do not hand-roll Gradle config.
+- Commits: no `Co-Authored-By` trailer.
+- Prefer `turbo` commands over `pnpm --filter`
