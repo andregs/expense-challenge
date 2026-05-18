@@ -43,7 +43,6 @@ dependencies {
 	testImplementation("org.testcontainers:testcontainers-kafka")
 	testImplementation("org.testcontainers:testcontainers-postgresql")
 	testImplementation("org.wiremock:wiremock-standalone:3.13.2")
-	testImplementation("org.awaitility:awaitility:4.3.0")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
