@@ -71,6 +71,7 @@ Pinned in `.tool-versions` (use `asdf install`):
 
 ## Conventions
 
+- Avoid regular expressions unless strictly necessary.
 - Spring profile `test` loads `src/test/resources/application-test.yml`.
 - Actuator exposes `health,info,metrics,prometheus`. Swagger UI at `/swagger-ui.html`, OpenAPI JSON at `/v3/api-docs`.
 - Do not introduce JPA, Hibernate, or an ORM — persistence is intentionally explicit SQL via Spring Data JDBC + `NamedParameterJdbcTemplate`.
