@@ -1,5 +1,6 @@
 package com.example.expensechallenge.service;
 
+import com.example.expensechallenge.api.dto.ConvertedTransactionResponse;
 import com.example.expensechallenge.api.dto.CreateTransactionRequest;
 import com.example.expensechallenge.api.dto.TransactionPageResponse;
 import com.example.expensechallenge.api.dto.TransactionResponse;
@@ -16,13 +17,16 @@ public class TransactionService {
 
     private final PurchaseTransactionRepository transactionRepository;
     private final OutboxWriter outboxWriter;
+    private final FxRateService fxRateService;
 
     public TransactionService(
         PurchaseTransactionRepository transactionRepository,
-        OutboxWriter outboxWriter
+        OutboxWriter outboxWriter,
+        FxRateService fxRateService
     ) {
         this.transactionRepository = transactionRepository;
         this.outboxWriter = outboxWriter;
+        this.fxRateService = fxRateService;
     }
 
     @Transactional
@@ -42,6 +46,14 @@ public class TransactionService {
         return transactionRepository.findById(id)
             .map(TransactionResponse::from)
             .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public ConvertedTransactionResponse getWithConversion(UUID id, String currency) {
+        PurchaseTransaction tx = transactionRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
+        FxRate rate = fxRateService.getRate(currency, tx.transactionDate());
+        return ConvertedTransactionResponse.from(tx, currency, rate);
     }
 
     @Transactional(readOnly = true)

@@ -53,7 +53,13 @@ public class TransactionController {
     }
 
     @GetMapping("/{id}")
-    public TransactionResponse getTransaction(@PathVariable UUID id) {
-        return service.get(id);
+    public Object getTransaction(
+        @PathVariable UUID id,
+        @RequestParam(required = false) String currency
+    ) {
+        if (currency == null) {
+            return service.get(id);
+        }
+        return service.getWithConversion(id, currency);
     }
 }
