@@ -44,10 +44,12 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-treasury:
-  base-url: ${TREASURY_BASE_URL:https://api.fiscaldata.treasury.gov}
+spring.http.client:
   connect-timeout: 5s
   read-timeout: 10s
+
+treasury:
+  base-url: ${TREASURY_BASE_URL:https://api.fiscaldata.treasury.gov}
 
 fx-cache:
   ttl: P30D
