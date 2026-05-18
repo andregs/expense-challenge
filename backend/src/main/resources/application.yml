@@ -49,7 +49,7 @@ spring.http.client:
   read-timeout: 10s
 
 treasury:
-  base-url: ${TREASURY_BASE_URL:https://api.fiscaldata.treasury.gov}
+  base-url: ${TREASURY_BASE_URL:https://api.fiscaldata.treasury.gov/services/api/fiscal_service}
 
 fx-cache:
   ttl: P30D

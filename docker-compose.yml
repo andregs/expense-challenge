@@ -1,10 +1,108 @@
-# Compose entry point. Today it only declares the Playwright runner so
-# the reviewer can `docker compose --profile e2e run --rm e2e` and get
-# green end-to-end coverage without installing anything on the host.
-# Future steps extend this file with `postgres`, `kafka`, `redis`,
-# `backend` and `web` services for the full stack.
-
 services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: expense_challenge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d expense_challenge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  kafka:
+    image: apache/kafka-native:3.8.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # Bind on all interfaces; advertise the service hostname for inter-container access.
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      # Raft quorum: the controller is co-located on the same node.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    # apache/kafka-native ships no shell scripts, so a port-level check is used.
+    # The backend depends on kafka with service_started (not service_healthy) and
+    # its Spring Kafka producer connects lazily on first send, giving Kafka time to
+    # finish initialising before any message is dispatched by the outbox relay.
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 2>/dev/null && exit 0 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ── Application ───────────────────────────────────────────────────────────
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/expense_challenge
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Points at the live Treasury FiscalData API. Override to a local stub if needed.
+      TREASURY_BASE_URL: https://api.fiscaldata.treasury.gov/services/api/fiscal_service
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+        # nc healthcheck just verifies the port is open; Spring's Kafka producer
+        # connects lazily so a short window where Kafka isn't fully initialised
+        # is fine.
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    restart: on-failure
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── Playwright (plug-n-play reviewer profile) ─────────────────────────────
+
   e2e:
     build:
       context: .
@@ -16,3 +114,6 @@ services:
       - CI=true
     # `webServer` in playwright.config.ts boots Next.js dev inside the
     # same container, so no network plumbing is needed.
+
+volumes:
+  postgres_data:

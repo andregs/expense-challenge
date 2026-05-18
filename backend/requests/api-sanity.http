@@ -1,0 +1,149 @@
+### Expense Tracker — API sanity requests
+# Select an environment from http-client.env.json (Run → Manage Environments):
+#   • local          — `./gradlew bootRun` on port 8080
+#   • compose        — `docker compose up` on port 8080
+#   • compose-via-web — same compose stack but routed through the Next.js proxy on port 3000
+
+# ── Create a transaction ─────────────────────────────────────────────────────
+
+### Create – happy path (201)
+POST {{baseUrl}}/api/v1/transactions
+Content-Type: application/json
+
+{
+  "description": "Office supplies",
+  "transactionDate": "2024-09-01",
+  "purchaseAmountUsd": "500.00"
+}
+
+> {%
+  client.test("status is 201", function () {
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+  });
+  client.global.set("txId", response.body.id);
+%}
+
+### Create – description too long (400)
+POST {{baseUrl}}/api/v1/transactions
+Content-Type: application/json
+
+{
+  "description": "This description is way too long and exceeds the fifty character limit",
+  "transactionDate": "2024-09-01",
+  "purchaseAmountUsd": "1.00"
+}
+
+> {%
+  client.test("status is 400", function () {
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
+  });
+%}
+
+### Create – negative amount (400)
+POST {{baseUrl}}/api/v1/transactions
+Content-Type: application/json
+
+{
+  "description": "Negative",
+  "transactionDate": "2024-09-01",
+  "purchaseAmountUsd": "-10.00"
+}
+
+> {%
+  client.test("status is 400", function () {
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
+  });
+%}
+
+# ── Retrieve a transaction ───────────────────────────────────────────────────
+
+### Get – no conversion (200)
+# Requires a prior "Create – happy path" run in this session to set {{txId}}.
+GET {{baseUrl}}/api/v1/transactions/{{txId}}
+
+> {%
+  client.test("status is 200", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+### Get – BRL conversion (200)
+# Hits the real US Treasury FiscalData API — requires internet access.
+GET {{baseUrl}}/api/v1/transactions/{{txId}}?currency=BRL
+
+> {%
+  client.test("status is 200", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+### Get – EUR conversion (200)
+GET {{baseUrl}}/api/v1/transactions/{{txId}}?currency=EUR
+
+> {%
+  client.test("status is 200", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+### Get – unknown id (404)
+GET {{baseUrl}}/api/v1/transactions/00000000-0000-0000-0000-000000000000
+
+> {%
+  client.test("status is 404", function () {
+    client.assert(response.status === 404, "Expected 404, got " + response.status);
+  });
+%}
+
+### Get – no rate within 6 months (422)
+# Create a transaction far in the future so no Treasury rate exists yet,
+# then request conversion — expecting 422 Unprocessable Entity.
+POST {{baseUrl}}/api/v1/transactions
+Content-Type: application/json
+
+{
+  "description": "Future purchase",
+  "transactionDate": "2030-01-01",
+  "purchaseAmountUsd": "1.00"
+}
+
+> {%
+  client.global.set("futureTxId", response.body.id);
+%}
+
+###
+GET {{baseUrl}}/api/v1/transactions/{{futureTxId}}?currency=BRL
+
+> {%
+  client.test("status is 422 (no rate within 6 months)", function () {
+    client.assert(response.status === 422, "Expected 422, got " + response.status);
+  });
+%}
+
+# ── List transactions ────────────────────────────────────────────────────────
+
+### List – first page (200)
+GET {{baseUrl}}/api/v1/transactions?page=0&size=10
+
+> {%
+  client.test("status is 200", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+# ── Infrastructure ───────────────────────────────────────────────────────────
+
+### Actuator health
+GET {{baseUrl}}/actuator/health
+
+> {%
+  client.test("status is 200", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+  client.test("application is UP", function () {
+    client.assert(response.body.status === "UP", "Expected UP, got " + response.body.status);
+  });
+%}
+
+### OpenAPI JSON spec
+GET {{baseUrl}}/v3/api-docs
