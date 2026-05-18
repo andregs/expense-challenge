@@ -1,5 +1,6 @@
 package com.example.expensechallenge.api;
 
+import com.example.expensechallenge.service.exception.UnconvertibleException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -49,5 +50,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<ProblemDetail> handleNotFound(NoSuchElementException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnconvertibleException.class)
+    ResponseEntity<ProblemDetail> handleUnconvertible(UnconvertibleException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+            .body(ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage()));
     }
 }

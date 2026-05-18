@@ -23,6 +23,11 @@ public class TreasuryClient {
      * retry/cache-fallback strategies. Connection and read timeouts are
      * configured globally via {@code spring.http.client.*} so every outbound
      * HTTP call shares the same SLA.
+     *
+     * @see <a href="https://fiscaldata.treasury.gov/datasets/treasury-reporting-rates-exchange/treasury-reporting-rates-of-exchange">
+     *      Treasury Reporting Rates of Exchange — dataset docs</a>
+     * @see <a href="https://fiscaldata.treasury.gov/api-documentation/">
+     *      FiscalData API documentation</a>
      */
     public Optional<TreasuryRateDto> fetchLatestRate(String currencyDesc, LocalDate onOrBefore) {
         String filter = "country_currency_desc:eq:" + currencyDesc
