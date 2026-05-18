@@ -1,0 +1,18 @@
+# Compose entry point. Today it only declares the Playwright runner so
+# the reviewer can `docker compose --profile e2e run --rm e2e` and get
+# green end-to-end coverage without installing anything on the host.
+# Future steps extend this file with `postgres`, `kafka`, `redis`,
+# `backend` and `web` services for the full stack.
+
+services:
+  e2e:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile.e2e
+    image: expense-challenge-e2e
+    profiles: [e2e]
+    init: true
+    environment:
+      - CI=true
+    # `webServer` in playwright.config.ts boots Next.js dev inside the
+    # same container, so no network plumbing is needed.

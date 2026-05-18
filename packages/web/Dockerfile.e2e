@@ -1,0 +1,33 @@
+# Containerised Playwright runner. The official image ships every
+# system library the Chromium/Firefox/WebKit binaries need plus the
+# preinstalled browsers themselves under /ms-playwright, so we skip
+# Playwright's post-install browser download (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1)
+# and reuse those bundled binaries.
+FROM mcr.microsoft.com/playwright:v1.60.0-noble
+
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    CI=true \
+    PNPM_HOME=/root/.local/share/pnpm \
+    PATH=/root/.local/share/pnpm:$PATH
+
+WORKDIR /workspace
+
+# pnpm via corepack (Node ships with corepack in the base image)
+RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
+
+# Install deps in a separate cached layer so source edits do not bust
+# the node_modules tree.
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
+COPY packages/api-contract/package.json ./packages/api-contract/
+COPY packages/web/package.json ./packages/web/
+
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the source after dependency install
+COPY . .
+
+# Refresh the generated OpenAPI types in case the lockfile build context
+# stripped them out
+RUN pnpm --filter @expense-challenge/api-contract generate
+
+CMD ["pnpm", "--filter", "@expense-challenge/web", "test:e2e"]

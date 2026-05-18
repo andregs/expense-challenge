@@ -30,7 +30,8 @@ pnpm lint
 pnpm typecheck
 pnpm test           # JS/TS tests only (backend uses gradle)
 pnpm test:coverage  # Vitest with v8 coverage, enforces thresholds in vitest.config.ts
-pnpm test:e2e       # Playwright
+pnpm test:e2e       # Playwright (requires `playwright install chromium` locally)
+docker compose --profile e2e run --rm e2e   # Plug-n-play E2E in the Microsoft Playwright image
 pnpm generate       # regenerates api-contract TS types from openapi.yaml
 pnpm format         # prettier write
 pnpm format:check
