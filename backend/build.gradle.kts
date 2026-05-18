@@ -44,6 +44,15 @@ dependencies {
 	testImplementation("org.testcontainers:testcontainers-postgresql")
 	testImplementation("org.wiremock:wiremock-standalone:3.13.2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	testImplementation("com.atlassian.oai:openapi-request-validator-mockmvc:3.0.0")
+}
+
+sourceSets {
+	test {
+		resources {
+			srcDir("../packages/api-contract")
+		}
+	}
 }
 
 tasks.withType<Test> {

@@ -8,6 +8,7 @@ info:
     of Exchange.
   license:
     name: MIT
+    identifier: MIT
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -178,19 +179,27 @@ components:
           $ref: '#/components/schemas/MonetaryAmount'
 
     ConvertedTransaction:
-      allOf:
-        - $ref: '#/components/schemas/Transaction'
-        - type: object
-          required: [currency, exchangeRate, convertedAmount, rateDate]
-          properties:
-            currency:
-              $ref: '#/components/schemas/CurrencyCode'
-            exchangeRate:
-              $ref: '#/components/schemas/ExchangeRate'
-            convertedAmount:
-              $ref: '#/components/schemas/MonetaryAmount'
-            rateDate:
-              $ref: '#/components/schemas/IsoDate'
+      type: object
+      required: [id, description, transactionDate, purchaseAmountUsd, currency, exchangeRate, convertedAmount, rateDate]
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+          maxLength: 50
+        transactionDate:
+          $ref: '#/components/schemas/IsoDate'
+        purchaseAmountUsd:
+          $ref: '#/components/schemas/MonetaryAmount'
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        exchangeRate:
+          $ref: '#/components/schemas/ExchangeRate'
+        convertedAmount:
+          $ref: '#/components/schemas/MonetaryAmount'
+        rateDate:
+          $ref: '#/components/schemas/IsoDate'
 
     TransactionPage:
       type: object
@@ -217,7 +226,7 @@ components:
     Problem:
       type: object
       description: RFC 7807 problem+json error response.
-      required: [type, title, status]
+      required: [title, status]
       properties:
         type:
           type: string
