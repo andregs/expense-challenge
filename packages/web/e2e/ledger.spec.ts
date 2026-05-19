@@ -1,17 +1,30 @@
 import { expect, test } from '@playwright/test';
 
+/**
+ * Ledger navigation tests. Both work in MSW and real-stack modes:
+ *  • The "lists transactions" test creates its own data first so it is
+ *    self-contained in real mode (no prior seeding required). In MSW mode the
+ *    same description ("Office supplies") already appears in the fixture page,
+ *    so the assertion holds regardless of which backend responds.
+ *  • The "new transaction shortcut" test is pure UI navigation with no data
+ *    dependency.
+ */
 test.describe('Ledger', () => {
-  test('lists fixture transactions and navigates to a detail row', async ({ page }) => {
+  test('lists transactions and navigates to a detail row', async ({ page }) => {
+    // Seed a transaction so the ledger is non-empty in real-stack mode.
+    // In MSW mode the POST returns a fixture and the ledger returns fixture rows.
+    await page.goto('/transactions/new');
+    await page.getByLabel(/description/i).fill('Office supplies');
+    await page.getByLabel(/transaction date/i).fill('2024-01-15');
+    await page.getByLabel(/amount/i).fill('49.99');
+    await page.getByRole('button', { name: /create transaction/i }).click();
+    await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
+
     await page.goto('/ledger');
-
-    // samplePage fixture has three rows
     await expect(page.getByText('Office supplies')).toBeVisible();
-    await expect(page.getByText('Conference ticket')).toBeVisible();
-    await expect(page.getByText('Team lunch')).toBeVisible();
 
-    // Clicking the description link navigates to /transactions/<id>
     await page.getByRole('link', { name: 'Office supplies' }).click();
-    await expect(page).toHaveURL(/\/transactions\/11111111-1111-4111-8111-111111111111$/);
+    await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
   });
 
   test('exposes the New transaction shortcut from the dashboard', async ({ page }) => {

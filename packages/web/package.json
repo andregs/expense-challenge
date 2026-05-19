@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:mocked": "NEXT_PUBLIC_API_MOCKING=enabled playwright test",
     "msw:init": "msw init public --save"
   },
   "dependencies": {

@@ -112,8 +112,16 @@ services:
     init: true
     environment:
       - CI=true
-    # `webServer` in playwright.config.ts boots Next.js dev inside the
-    # same container, so no network plumbing is needed.
+      # Point Playwright at the composed web and backend services.
+      # NEXT_PUBLIC_API_MOCKING is intentionally absent: the production web
+      # image is built with it disabled, so real API calls flow to the backend.
+      - BASE_URL=http://web:3000
+      - BACKEND_URL=http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+      web:
+        condition: service_started
 
 volumes:
   postgres_data:
