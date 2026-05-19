@@ -3,7 +3,6 @@
 import { Card } from '@/design-system';
 import { formatUsd } from '@/lib/format';
 import { useTransactionsPage } from '@/lib/queries/transactions';
-import { CacheIndicator } from './CacheIndicator';
 import styles from './Dashboard.module.scss';
 
 export function StatsRow() {
@@ -31,10 +30,6 @@ export function StatsRow() {
 
       <Card title="Transactions" subtitle="Total recorded">
         <p className={styles.statValue}>{countLabel}</p>
-      </Card>
-
-      <Card title="Infra signal" subtitle="Cache health" className={styles.cacheCard}>
-        <CacheIndicator />
       </Card>
     </section>
   );

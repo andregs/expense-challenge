@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import styles from './Ledger.module.scss';
+import styles from './Dashboard.module.scss';
 
 interface PaginationProps {
   page: number;

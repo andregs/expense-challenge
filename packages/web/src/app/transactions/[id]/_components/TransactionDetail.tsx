@@ -42,8 +42,8 @@ export function TransactionDetail({ id }: { id: string }) {
 
   return (
     <>
-      <Link href="/ledger" className={styles.backLink}>
-        ← Back to ledger
+      <Link href="/" className={styles.backLink}>
+        ← Back to dashboard
       </Link>
 
       <Card title={tx.description}>

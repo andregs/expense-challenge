@@ -37,12 +37,6 @@
   font-weight: 600;
 }
 
-.cacheCard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .empty {
   margin: 0;
   color: var(--color-text-muted);
@@ -66,4 +60,67 @@
   &:hover {
     text-decoration: underline;
   }
+}
+
+// Stretched-link row: the description <Link> covers the entire <tr> via
+// ::after so the whole row is clickable with a single semantic anchor.
+.row {
+  position: relative;
+  cursor: pointer;
+}
+
+.rowLink {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 500;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::after {
+      box-shadow: var(--focus-ring);
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+.paginationWrapper {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--type-sm);
+}
+
+.pageBtn {
+  color: var(--color-primary-600);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.pageBtnDisabled {
+  color: var(--color-text-muted);
+}
+
+.pageInfo {
+  color: var(--color-text-muted);
+  margin-inline: auto;
 }

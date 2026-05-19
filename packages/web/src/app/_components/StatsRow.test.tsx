@@ -38,9 +38,4 @@ describe('StatsRow', () => {
     const errorMarks = await screen.findAllByText('!');
     expect(errorMarks.length).toBeGreaterThanOrEqual(2);
   });
-
-  it('renders the cache health indicator slot', async () => {
-    render(wrap(<StatsRow />));
-    expect(await screen.findByText(/fx cache: warm/i)).toBeInTheDocument();
-  });
 });

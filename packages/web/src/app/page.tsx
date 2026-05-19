@@ -1,5 +1,6 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { RecentTransactions } from './_components/RecentTransactions';
+import { LedgerTable } from './_components/LedgerTable';
 import { StatsRow } from './_components/StatsRow';
 import styles from './_components/Dashboard.module.scss';
 
@@ -17,7 +18,16 @@ export default function DashboardPage() {
       </header>
 
       <StatsRow />
-      <RecentTransactions />
+
+      {/*
+       * Suspense is required: useSearchParams() inside LedgerTable reads the
+       * URL at render time, which means the component cannot be statically
+       * pre-rendered. Wrapping it in Suspense tells Next to render a shell on
+       * the server and hydrate the table on the client once the URL is known.
+       */}
+      <Suspense>
+        <LedgerTable />
+      </Suspense>
     </main>
   );
 }
