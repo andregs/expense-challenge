@@ -41,8 +41,7 @@ function LedgerBody({
 }) {
   if (isPending) return <p className={styles.empty}>Loading…</p>;
   if (isError || !data) return <p className={styles.error}>Failed to load transactions.</p>;
-  if (data.items.length === 0)
-    return <p className={styles.empty}>No transactions recorded yet.</p>;
+  if (data.items.length === 0) return <p className={styles.empty}>No transactions recorded yet.</p>;
 
   return (
     <Table caption="All transactions">

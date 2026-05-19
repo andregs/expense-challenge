@@ -29,7 +29,10 @@ test.describe('Ledger', () => {
 
   test('exposes the New transaction shortcut from the dashboard', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /new transaction/i }).first().click();
+    await page
+      .getByRole('link', { name: /new transaction/i })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/transactions\/new$/);
     await expect(page.getByRole('button', { name: /create transaction/i })).toBeVisible();
   });

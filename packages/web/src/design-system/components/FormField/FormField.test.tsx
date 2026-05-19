@@ -30,9 +30,7 @@ describe('FormField', () => {
 
   it('leaves aria-describedby unset when there is no hint or error', () => {
     render(
-      <FormField label="Plain">
-        {(props) => <Input {...props} aria-label="plain" />}
-      </FormField>,
+      <FormField label="Plain">{(props) => <Input {...props} aria-label="plain" />}</FormField>,
     );
     expect(screen.getByLabelText('plain')).not.toHaveAttribute('aria-describedby');
   });

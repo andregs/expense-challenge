@@ -76,6 +76,6 @@ Pinned in `.tool-versions` (use `asdf install`):
 - Actuator exposes `health,info,metrics,prometheus`. Swagger UI at `/swagger-ui.html`, OpenAPI JSON at `/v3/api-docs`.
 - Do not introduce JPA, Hibernate, or an ORM — persistence is intentionally explicit SQL via Spring Data JDBC + `NamedParameterJdbcTemplate`.
 - New Spring Boot modules: scaffold via [start.spring.io](https://start.spring.io), do not hand-roll Gradle config.
-- Commits: no `Co-Authored-By` trailer. Commit messages must include a brief, multi-paragraph body explaining *what* was built, key design decisions, and notes on test coverage (what is tested and what is intentionally left untested). One-liner messages are not acceptable for feature commits.
+- Commits: no `Co-Authored-By` trailer. Commit messages must include a brief, multi-paragraph body explaining _what_ was built, key design decisions, and notes on test coverage (what is tested and what is intentionally left untested). One-liner messages are not acceptable for feature commits.
 - Every commit that introduces new components or pages must include co-located Vitest tests (`*.test.tsx`) covering the main test cases e.g. happy path, empty/error states, and any non-trivial UI logic. Tests live next to the component they cover.
 - Prefer `turbo` commands over `pnpm --filter`

@@ -5,7 +5,10 @@ import type { DialogHTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import styles from './Modal.module.scss';
 
-export interface ModalProps extends Omit<DialogHTMLAttributes<HTMLDialogElement>, 'title' | 'open'> {
+export interface ModalProps extends Omit<
+  DialogHTMLAttributes<HTMLDialogElement>,
+  'title' | 'open'
+> {
   open: boolean;
   title?: ReactNode;
   onClose?: () => void;

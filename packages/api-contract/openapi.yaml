@@ -180,7 +180,17 @@ components:
 
     ConvertedTransaction:
       type: object
-      required: [id, description, transactionDate, purchaseAmountUsd, currency, exchangeRate, convertedAmount, rateDate]
+      required:
+        [
+          id,
+          description,
+          transactionDate,
+          purchaseAmountUsd,
+          currency,
+          exchangeRate,
+          convertedAmount,
+          rateDate,
+        ]
       properties:
         id:
           type: string
