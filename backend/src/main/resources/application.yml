@@ -59,6 +59,7 @@ outbox:
     enabled: true
     fixed-delay: 2000
     batch-size: 50
+    max-retries: 5
 
 logging:
   level:

@@ -14,13 +14,22 @@ public record OutboxEvent(
     String payload,
     OutboxStatus status,
     @ReadOnlyProperty OffsetDateTime createdAt,
-    OffsetDateTime publishedAt
+    OffsetDateTime publishedAt,
+    int retryCount
 ) {
     public static OutboxEvent pending(UUID aggregateId, String type, String payload) {
-        return new OutboxEvent(null, aggregateId, type, payload, OutboxStatus.PENDING, null, null);
+        return new OutboxEvent(null, aggregateId, type, payload, OutboxStatus.PENDING, null, null, 0);
     }
 
     public OutboxEvent markPublished(OffsetDateTime at) {
-        return new OutboxEvent(id, aggregateId, type, payload, OutboxStatus.PUBLISHED, createdAt, at);
+        return new OutboxEvent(id, aggregateId, type, payload, OutboxStatus.PUBLISHED, createdAt, at, retryCount);
+    }
+
+    public OutboxEvent incrementRetry() {
+        return new OutboxEvent(id, aggregateId, type, payload, OutboxStatus.PENDING, createdAt, null, retryCount + 1);
+    }
+
+    public OutboxEvent markFailed() {
+        return new OutboxEvent(id, aggregateId, type, payload, OutboxStatus.FAILED, createdAt, null, retryCount);
     }
 }

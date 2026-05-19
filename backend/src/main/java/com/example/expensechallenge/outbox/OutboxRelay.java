@@ -1,5 +1,6 @@
 package com.example.expensechallenge.outbox;
 
+import com.example.expensechallenge.domain.OutboxEvent;
 import com.example.expensechallenge.infrastructure.messaging.TransactionEventPublisher;
 import com.example.expensechallenge.infrastructure.persistence.OutboxEventRepository;
 import java.time.OffsetDateTime;
@@ -19,9 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Each event is published synchronously and immediately marked PUBLISHED
  * within the same DB transaction. A failure on any individual event is caught
- * and logged; the event is left PENDING so the next cycle retries it. Because
- * the lock is held for the full batch, keep {@code outbox.relay.batch-size}
- * small enough that the lock time stays well under the Kafka request timeout.
+ * and logged; {@code retry_count} is incremented and the event stays PENDING
+ * so the next cycle retries it. Once {@code retry_count} reaches
+ * {@code outbox.relay.max-retries} the event is promoted to FAILED (dead-letter)
+ * and excluded from future relay batches. Operators can re-queue a FAILED event
+ * by resetting its status and retry_count directly in the database.
  *
  * <p>Ordering guarantee: events are fetched {@code ORDER BY created_at} and
  * published sequentially. Kafka key = {@code aggregateId}, so same-aggregate
@@ -29,15 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  * (event A fails, event B for the same aggregate succeeds, A is retried next
  * cycle) would cause out-of-order delivery — but only if an aggregate emits
  * multiple sequential events. Today each purchase produces exactly one outbox
- * event, so this cannot occur. If multiple event types per aggregate are added
- * later, enforce ordering by querying one aggregate at a time or by adding a
- * per-aggregate sequence number.
- *
- * <p>The {@code FAILED} status defined in the schema and {@link com.example.expensechallenge.domain.OutboxStatus}
- * is reserved for dead-letter handling (mark after N retries) and is not yet
- * written by this relay. Events that fail persistently will keep retrying
- * indefinitely until the root cause is resolved. A retry-count column and
- * dead-letter promotion will be added in the resilience step.
+ * event, so this cannot occur.
  *
  * <p>Set {@code outbox.relay.enabled=false} to disable this component
  * entirely (default in the {@code test} Spring profile).
@@ -51,15 +46,18 @@ public class OutboxRelay {
     private final OutboxEventRepository outboxRepository;
     private final TransactionEventPublisher publisher;
     private final int batchSize;
+    private final int maxRetries;
 
     public OutboxRelay(
         OutboxEventRepository outboxRepository,
         TransactionEventPublisher publisher,
-        @Value("${outbox.relay.batch-size:50}") int batchSize
+        @Value("${outbox.relay.batch-size:50}") int batchSize,
+        @Value("${outbox.relay.max-retries:5}") int maxRetries
     ) {
         this.outboxRepository = outboxRepository;
         this.publisher = publisher;
         this.batchSize = batchSize;
+        this.maxRetries = maxRetries;
     }
 
     @Scheduled(fixedDelayString = "${outbox.relay.fixed-delay:2000}")
@@ -78,9 +76,21 @@ public class OutboxRelay {
                 publisher.publish(event).get(10, TimeUnit.SECONDS);
                 outboxRepository.save(event.markPublished(now));
             } catch (Exception e) {
-                log.error("Failed to publish outbox event {} (type={}): {}",
-                    event.id(), event.type(), e.getMessage());
+                handleFailure(event, e);
             }
+        }
+    }
+
+    private void handleFailure(OutboxEvent event, Exception cause) {
+        int attempts = event.retryCount() + 1;
+        if (attempts >= maxRetries) {
+            log.error("Outbox event {} (type={}) exhausted {} retries, marking FAILED: {}",
+                event.id(), event.type(), maxRetries, cause.getMessage());
+            outboxRepository.save(event.markFailed());
+        } else {
+            log.warn("Outbox event {} (type={}) failed (attempt {}/{}): {}",
+                event.id(), event.type(), attempts, maxRetries, cause.getMessage());
+            outboxRepository.save(event.incrementRetry());
         }
     }
 }

@@ -142,7 +142,7 @@ class OutboxIntegrationTest {
     }
 
     @Test
-    void publishFailure_leavesRowPending() throws Exception {
+    void publishFailure_leavesRowPendingAndIncrementsRetryCount() throws Exception {
         doReturn(CompletableFuture.failedFuture(new RuntimeException("Kafka down")))
             .when(publisher).publish(any());
 
@@ -152,6 +152,25 @@ class OutboxIntegrationTest {
         OutboxEvent event = findOutboxEvent(txId);
         assertThat(event.status()).isEqualTo(OutboxStatus.PENDING);
         assertThat(event.publishedAt()).isNull();
+        assertThat(event.retryCount()).isEqualTo(1);
+    }
+
+    @Test
+    void publishFailure_afterMaxRetries_marksEventFailed() throws Exception {
+        doReturn(CompletableFuture.failedFuture(new RuntimeException("Kafka down")))
+            .when(publisher).publish(any());
+
+        UUID txId = postTransaction("Laptop", "2026-05-01", "1500.00");
+
+        // Default max-retries in tests is 5; relay 5 times to exhaust the budget.
+        for (int i = 0; i < 5; i++) {
+            outboxRelay.relay();
+        }
+
+        OutboxEvent event = findOutboxEvent(txId);
+        assertThat(event.status()).isEqualTo(OutboxStatus.FAILED);
+        assertThat(event.publishedAt()).isNull();
+        assertThat(event.retryCount()).isEqualTo(4);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
