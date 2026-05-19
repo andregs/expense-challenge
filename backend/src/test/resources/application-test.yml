@@ -6,6 +6,10 @@ outbox:
   relay:
     enabled: false
 
+treasury:
+  retry:
+    delay: 0
+
 logging:
   level:
     root: WARN

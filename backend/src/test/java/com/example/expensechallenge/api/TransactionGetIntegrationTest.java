@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.expensechallenge.TestcontainersConfiguration;
+import com.example.expensechallenge.service.FxRateService;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.jayway.jsonpath.JsonPath;
@@ -34,7 +35,8 @@ import org.springframework.test.web.servlet.MvcResult;
 /**
  * Full-stack GET /api/v1/transactions/{id} integration tests.
  *
- * <p>WireMock is started in a static initialiser so it is running before
+ * <p>
+ * WireMock is started in a static initialiser so it is running before
  * {@link DynamicPropertySource} wires the Treasury base URL into the Spring
  * context. Each test clears both the WireMock stubs and the Redis FX cache
  * so tests are fully isolated despite sharing the same application context.
@@ -63,13 +65,15 @@ class TransactionGetIntegrationTest {
         wireMock.stop();
     }
 
-    @Autowired MockMvc mockMvc;
-    @Autowired CacheManager cacheManager;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    CacheManager cacheManager;
 
     @BeforeEach
     void setUp() {
         wireMock.resetAll();
-        Cache cache = cacheManager.getCache("fxRates");
+        Cache cache = cacheManager.getCache(FxRateService.CACHE_NAME);
         if (cache != null) {
             cache.clear();
         }
@@ -81,29 +85,31 @@ class TransactionGetIntegrationTest {
         MvcResult result = mockMvc.perform(post("/api/v1/transactions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"description":"Test","transactionDate":"%s","purchaseAmountUsd":"%s"}
-                    """.formatted(date, amount)))
-            .andExpect(status().isCreated())
-            .andReturn();
+                        {"description":"Test","transactionDate":"%s","purchaseAmountUsd":"%s"}
+                        """.formatted(date, amount)))
+                .andExpect(status().isCreated())
+                .andReturn();
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
     }
 
     private void stubTreasuryRate(String countryCurrencyDesc, String exchangeRate, String rateDate) {
         wireMock.stubFor(get(urlPathEqualTo("/v1/accounting/od/rates_of_exchange"))
-            .willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
-                    {"data":[{"country_currency_desc":"%s","exchange_rate":"%s","record_date":"%s"}],"meta":{"count":1}}
-                    """.formatted(countryCurrencyDesc, exchangeRate, rateDate))));
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                                """
+                                        {"data":[{"country_currency_desc":"%s","exchange_rate":"%s","record_date":"%s"}],"meta":{"count":1}}
+                                        """
+                                        .formatted(countryCurrencyDesc, exchangeRate, rateDate))));
     }
 
     private void stubTreasuryEmpty() {
         wireMock.stubFor(get(urlPathEqualTo("/v1/accounting/od/rates_of_exchange"))
-            .willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
-                    {"data":[],"meta":{"count":0}}
-                    """)));
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"data":[],"meta":{"count":0}}
+                                """)));
     }
 
     // ── tests ─────────────────────────────────────────────────────────────────
@@ -114,16 +120,16 @@ class TransactionGetIntegrationTest {
         stubTreasuryRate("Brazil-Real", "5.1234", "2026-03-31");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.id").value(id.toString()))
-            .andExpect(jsonPath("$.description").value("Test"))
-            .andExpect(jsonPath("$.transactionDate").value("2026-04-15"))
-            .andExpect(jsonPath("$.purchaseAmountUsd").value("100.00"))
-            .andExpect(jsonPath("$.currency").value("BRL"))
-            .andExpect(jsonPath("$.exchangeRate").value("5.1234"))
-            .andExpect(jsonPath("$.convertedAmount").value("512.34"))
-            .andExpect(jsonPath("$.rateDate").value("2026-03-31"));
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.description").value("Test"))
+                .andExpect(jsonPath("$.transactionDate").value("2026-04-15"))
+                .andExpect(jsonPath("$.purchaseAmountUsd").value("100.00"))
+                .andExpect(jsonPath("$.currency").value("BRL"))
+                .andExpect(jsonPath("$.exchangeRate").value("5.1234"))
+                .andExpect(jsonPath("$.convertedAmount").value("512.34"))
+                .andExpect(jsonPath("$.rateDate").value("2026-03-31"));
     }
 
     @Test
@@ -133,8 +139,8 @@ class TransactionGetIntegrationTest {
         stubTreasuryRate("Brazil-Real", "1.2355", "2026-03-31");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.convertedAmount").value("1.24"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.convertedAmount").value("1.24"));
     }
 
     @Test
@@ -142,11 +148,11 @@ class TransactionGetIntegrationTest {
         UUID id = seedTransaction("2026-04-15", "100.00");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(id.toString()))
-            .andExpect(jsonPath("$.purchaseAmountUsd").value("100.00"))
-            .andExpect(jsonPath("$.currency").doesNotExist())
-            .andExpect(jsonPath("$.convertedAmount").doesNotExist());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.purchaseAmountUsd").value("100.00"))
+                .andExpect(jsonPath("$.currency").doesNotExist())
+                .andExpect(jsonPath("$.convertedAmount").doesNotExist());
     }
 
     @Test
@@ -155,10 +161,10 @@ class TransactionGetIntegrationTest {
         stubTreasuryRate("Brazil-Real", "5.1234", "2026-03-31");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.convertedAmount").value("512.34"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.convertedAmount").value("512.34"));
 
         wireMock.verify(1, getRequestedFor(urlPathEqualTo("/v1/accounting/od/rates_of_exchange")));
     }
@@ -166,8 +172,8 @@ class TransactionGetIntegrationTest {
     @Test
     void unknownId_returns404() throws Exception {
         mockMvc.perform(get("/api/v1/transactions/{id}", UUID.randomUUID()).param("currency", "BRL"))
-            .andExpect(status().isNotFound())
-            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
     }
 
     @Test
@@ -176,8 +182,8 @@ class TransactionGetIntegrationTest {
         stubTreasuryEmpty();
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isUnprocessableContent())
-            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
     }
 
     @Test
@@ -187,8 +193,8 @@ class TransactionGetIntegrationTest {
         stubTreasuryRate("Brazil-Real", "5.0", "2025-10-14");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isUnprocessableContent())
-            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
     }
 
     @Test
@@ -196,7 +202,7 @@ class TransactionGetIntegrationTest {
         UUID id = seedTransaction("2026-04-15", "100.00");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "XYZ"))
-            .andExpect(status().isUnprocessableContent())
-            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
     }
 }

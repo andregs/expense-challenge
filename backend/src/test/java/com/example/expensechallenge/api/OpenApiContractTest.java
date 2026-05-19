@@ -7,13 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-
-import com.example.expensechallenge.TestcontainersConfiguration;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.jayway.jsonpath.JsonPath;
 import java.util.UUID;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,16 +25,25 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.example.expensechallenge.TestcontainersConfiguration;
+import com.example.expensechallenge.service.FxRateService;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.jayway.jsonpath.JsonPath;
+
 /**
  * Validates that every controller response conforms to the OpenAPI contract
  * defined in {@code packages/api-contract/openapi.yaml}.
  *
- * <p>The spec is loaded from the test classpath (the api-contract directory is
+ * <p>
+ * The spec is loaded from the test classpath (the api-contract directory is
  * added as a test resource srcDir in {@code build.gradle.kts}). Each test
  * exercises one endpoint variant and asserts only schema conformance — the
  * business-logic assertions live in the dedicated integration tests.
  *
- * <p>WireMock stubs the Treasury upstream for the conversion test so the full
+ * <p>
+ * WireMock stubs the Treasury upstream for the conversion test so the full
  * GET path (including FX lookup) is exercised without hitting the real API.
  */
 @SpringBootTest
@@ -68,13 +72,15 @@ class OpenApiContractTest {
         wireMock.stop();
     }
 
-    @Autowired MockMvc mockMvc;
-    @Autowired CacheManager cacheManager;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    CacheManager cacheManager;
 
     @BeforeEach
     void setUp() {
         wireMock.resetAll();
-        Cache cache = cacheManager.getCache("fxRates");
+        Cache cache = cacheManager.getCache(FxRateService.CACHE_NAME);
         if (cache != null) {
             cache.clear();
         }
@@ -86,29 +92,31 @@ class OpenApiContractTest {
         MvcResult result = mockMvc.perform(post("/api/v1/transactions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"description":"Laptop","transactionDate":"%s","purchaseAmountUsd":"%s"}
-                    """.formatted(date, amount)))
-            .andExpect(status().isCreated())
-            .andReturn();
+                        {"description":"Laptop","transactionDate":"%s","purchaseAmountUsd":"%s"}
+                        """.formatted(date, amount)))
+                .andExpect(status().isCreated())
+                .andReturn();
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
     }
 
     private void stubTreasury(String countryCurrencyDesc, String rate, String rateDate) {
         wireMock.stubFor(WireMock.get(urlPathEqualTo("/v1/accounting/od/rates_of_exchange"))
-            .willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
-                    {"data":[{"country_currency_desc":"%s","exchange_rate":"%s","record_date":"%s"}],"meta":{"count":1}}
-                    """.formatted(countryCurrencyDesc, rate, rateDate))));
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                                """
+                                        {"data":[{"country_currency_desc":"%s","exchange_rate":"%s","record_date":"%s"}],"meta":{"count":1}}
+                                        """
+                                        .formatted(countryCurrencyDesc, rate, rateDate))));
     }
 
     private void stubTreasuryEmpty() {
         wireMock.stubFor(WireMock.get(urlPathEqualTo("/v1/accounting/od/rates_of_exchange"))
-            .willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
-                    {"data":[],"meta":{"count":0}}
-                    """)));
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"data":[],"meta":{"count":0}}
+                                """)));
     }
 
     // ── POST /api/v1/transactions ─────────────────────────────────────────────
@@ -118,10 +126,10 @@ class OpenApiContractTest {
         mockMvc.perform(post("/api/v1/transactions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"description":"Office supplies","transactionDate":"2026-04-15","purchaseAmountUsd":"49.99"}
-                    """))
-            .andExpect(status().isCreated())
-            .andExpect(openApi().isValid(SPEC));
+                        {"description":"Office supplies","transactionDate":"2026-04-15","purchaseAmountUsd":"49.99"}
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(openApi().isValid(SPEC));
     }
 
     // ── GET /api/v1/transactions ──────────────────────────────────────────────
@@ -131,8 +139,8 @@ class OpenApiContractTest {
         seedTransaction("2026-04-15", "100.00");
 
         mockMvc.perform(get("/api/v1/transactions").param("page", "0").param("size", "10"))
-            .andExpect(status().isOk())
-            .andExpect(openApi().isValid(SPEC));
+                .andExpect(status().isOk())
+                .andExpect(openApi().isValid(SPEC));
     }
 
     // ── GET /api/v1/transactions/{id} ─────────────────────────────────────────
@@ -142,8 +150,8 @@ class OpenApiContractTest {
         UUID id = seedTransaction("2026-04-15", "100.00");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id))
-            .andExpect(status().isOk())
-            .andExpect(openApi().isValid(SPEC));
+                .andExpect(status().isOk())
+                .andExpect(openApi().isValid(SPEC));
     }
 
     @Test
@@ -152,15 +160,15 @@ class OpenApiContractTest {
         stubTreasury("Brazil-Real", "5.1234", "2026-03-31");
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isOk())
-            .andExpect(openApi().isValid(SPEC));
+                .andExpect(status().isOk())
+                .andExpect(openApi().isValid(SPEC));
     }
 
     @Test
     void getTransaction_404_conformsToSpec() throws Exception {
         mockMvc.perform(get("/api/v1/transactions/{id}", UUID.randomUUID()))
-            .andExpect(status().isNotFound())
-            .andExpect(openApi().isValid(SPEC));
+                .andExpect(status().isNotFound())
+                .andExpect(openApi().isValid(SPEC));
     }
 
     @Test
@@ -169,7 +177,7 @@ class OpenApiContractTest {
         stubTreasuryEmpty();
 
         mockMvc.perform(get("/api/v1/transactions/{id}", id).param("currency", "BRL"))
-            .andExpect(status().isUnprocessableContent())
-            .andExpect(openApi().isValid(SPEC));
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(openApi().isValid(SPEC));
     }
 }

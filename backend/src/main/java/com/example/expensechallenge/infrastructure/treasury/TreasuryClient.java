@@ -3,11 +3,16 @@ package com.example.expensechallenge.infrastructure.treasury;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.HttpServerErrorException;
 
 @Component
 public class TreasuryClient {
+
+    public static final String CIRCUIT_BREAKER_NAME = "treasury";
 
     private final RestClient restClient;
 
@@ -18,17 +23,24 @@ public class TreasuryClient {
     /**
      * Fetches the most recent Treasury rate for the given currency with
      * {@code record_date <= onOrBefore}. Returns {@code Optional.empty()} when
-     * Treasury reports no matching row. Network and protocol errors propagate
-     * as {@code RestClientException} subclasses so callers can decide on
-     * retry/cache-fallback strategies. Connection and read timeouts are
-     * configured globally via {@code spring.http.client.*} so every outbound
-     * HTTP call shares the same SLA.
+     * Treasury reports no matching row.
+     *
+     * <p>Transient failures (network errors and 5xx responses) are retried up
+     * to 3 times with exponential backoff starting at 300 ms. Client errors
+     * (4xx) are not retried and propagate immediately. After retry exhaustion
+     * the last exception propagates to the caller.
      *
      * @see <a href="https://fiscaldata.treasury.gov/datasets/treasury-reporting-rates-exchange/treasury-reporting-rates-of-exchange">
      *      Treasury Reporting Rates of Exchange — dataset docs</a>
      * @see <a href="https://fiscaldata.treasury.gov/api-documentation/">
      *      FiscalData API documentation</a>
      */
+    @Retryable(
+        includes = {ResourceAccessException.class, HttpServerErrorException.class},
+        maxRetriesString = "${treasury.retry.max-retries:3}",
+        delayString = "${treasury.retry.delay:300}",
+        multiplierString = "${treasury.retry.multiplier:2.0}"
+    )
     public Optional<TreasuryRateDto> fetchLatestRate(String currencyDesc, LocalDate onOrBefore) {
         String filter = "country_currency_desc:eq:" + currencyDesc
             + ",record_date:lte:" + onOrBefore;
