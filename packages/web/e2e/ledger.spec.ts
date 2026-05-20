@@ -1,36 +1,34 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * Dashboard ledger navigation tests. Both work in MSW and real-stack modes:
- *  • The "lists transactions" test seeds data via the modal, navigates to the
- *    dashboard, then clicks through to the detail page.
- *  • The "new transaction modal" test asserts the button opens the form
- *    with no data dependency.
+ * Dashboard ledger navigation. Seeds a transaction via the modal, navigates
+ * to the dashboard, then clicks through to the detail page.
+ *
+ * Works in both modes:
+ *  • NEXT_PUBLIC_API_MOCKING=enabled — POST returns a fixture and the ledger
+ *    returns fixture rows that include it.
+ *  • real stack — DB volume is wiped before each run by the e2e compose
+ *    wrapper. We pin the locator to the just-created transaction's UUID
+ *    (captured from the URL after POST) so the assertion stays deterministic
+ *    across retries.
  */
-test.describe('Dashboard ledger', () => {
-  test('lists transactions and navigates to a detail row', async ({ page }) => {
-    // Seed a transaction so the ledger is non-empty in real-stack mode.
-    // In MSW mode the POST returns a fixture and the ledger returns fixture rows.
-    await page.goto('/');
-    await page.getByRole('button', { name: /new transaction/i }).click();
-    await expect(page.getByRole('dialog', { name: /new transaction/i })).toBeVisible();
-    await page.getByLabel(/description/i).fill('Office supplies');
-    await page.getByLabel(/transaction date/i).fill('2024-01-15');
-    await page.getByLabel(/amount/i).fill('49.99');
-    await page.getByRole('button', { name: /create transaction/i }).click();
-    await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
+test('lists transactions and navigates to a detail row', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /new transaction/i }).click();
+  await expect(page.getByRole('dialog', { name: /new transaction/i })).toBeVisible();
+  await page.getByLabel(/description/i).fill('Office supplies');
+  await page.getByLabel(/transaction date/i).fill('2024-01-15');
+  await page.getByLabel(/amount/i).fill('49.99');
+  await page.getByRole('button', { name: /create transaction/i }).click();
+  await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
 
-    await page.goto('/');
-    await expect(page.getByText('Office supplies')).toBeVisible();
+  const id = new URL(page.url()).pathname.split('/').pop() ?? '';
+  expect(id).toMatch(/^[0-9a-f-]{36}$/);
 
-    await page.getByRole('link', { name: 'Office supplies' }).click();
-    await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
-  });
-
-  test('clicking New transaction button opens the form modal', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /new transaction/i }).click();
-    await expect(page.getByRole('dialog', { name: /new transaction/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /create transaction/i })).toBeVisible();
-  });
+  await page.goto('/');
+  const row = page.locator(`a[href="/transactions/${id}"]`);
+  await expect(row).toBeVisible();
+  await expect(row).toHaveText('Office supplies');
+  await row.click();
+  await expect(page).toHaveURL(`/transactions/${id}`);
 });

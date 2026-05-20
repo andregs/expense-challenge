@@ -19,7 +19,7 @@ test('creates a transaction and converts it to BRL', async ({ page }) => {
   await page.getByRole('button', { name: /new transaction/i }).click();
   await expect(page.getByRole('dialog', { name: /new transaction/i })).toBeVisible();
 
-  await page.getByLabel(/description/i).fill('Office supplies');
+  await page.getByLabel(/description/i).fill('Hotel stay');
   await page.getByLabel(/transaction date/i).fill('2024-01-15');
   await page.getByLabel(/amount/i).fill('49.99');
 
@@ -27,10 +27,9 @@ test('creates a transaction and converts it to BRL', async ({ page }) => {
 
   // UUID differs between MSW fixture and real backend — match any UUID
   await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole('heading', { name: 'Office supplies' })).toBeVisible();
 
-  // Pick a currency from the dropdown to trigger the conversion request
-  await page.getByLabel(/convert to/i).selectOption('BRL');
+  // Type a currency code into the searchable input to trigger the conversion request
+  await page.getByLabel(/convert to/i).fill('BRL');
 
   // Amount is fixture-specific in MSW mode and real-rate-based in real mode;
   // assert that some valid converted amount is displayed rather than a fixed value

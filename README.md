@@ -166,7 +166,9 @@ pnpm test
 pnpm test:backend
 
 # Playwright E2E via Docker Compose (full stack)
-docker compose --profile e2e run --rm e2e
+# Dedicated compose project so the e2e postgres volume is wiped each run
+docker compose -p e2e --profile e2e down -v
+docker compose -p e2e --profile e2e run --build --rm e2e
 
 # Playwright E2E (MSW-backed, no backend needed, requires playwright locally)
 pnpm test:e2e
