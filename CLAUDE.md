@@ -39,9 +39,10 @@ pnpm format:check
 
 Single package: `pnpm --filter @expense-challenge/<name> <script>`.
 
-Backend (from `backend/`):
+Backend — all Gradle commands must be run from `backend/` (the working directory must contain `gradlew`):
 
 ```bash
+cd backend
 ./gradlew bootRun
 ./gradlew test
 ./gradlew test --tests "com.example.expensechallenge.persistence.PersistenceIntegrationTest"

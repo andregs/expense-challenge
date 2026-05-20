@@ -9,27 +9,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.example.expensechallenge.TestcontainersConfiguration;
+import com.example.expensechallenge.AbstractWireMockIntegrationTest;
 import com.example.expensechallenge.service.FxRateService;
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.jayway.jsonpath.JsonPath;
 
 /**
@@ -46,31 +37,9 @@ import com.jayway.jsonpath.JsonPath;
  * WireMock stubs the Treasury upstream for the conversion test so the full
  * GET path (including FX lookup) is exercised without hitting the real API.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-@ActiveProfiles("test")
-class OpenApiContractTest {
+class OpenApiContractTest extends AbstractWireMockIntegrationTest {
 
     private static final String SPEC = "openapi.yaml";
-
-    private static final WireMockServer wireMock = startWireMock();
-
-    private static WireMockServer startWireMock() {
-        var server = new WireMockServer(WireMockConfiguration.options().dynamicPort());
-        server.start();
-        return server;
-    }
-
-    @DynamicPropertySource
-    static void overrideProperties(DynamicPropertyRegistry registry) {
-        registry.add("treasury.base-url", wireMock::baseUrl);
-    }
-
-    @AfterAll
-    static void stopWireMock() {
-        wireMock.stop();
-    }
 
     @Autowired
     MockMvc mockMvc;

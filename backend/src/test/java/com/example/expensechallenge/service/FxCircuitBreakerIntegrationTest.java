@@ -8,21 +8,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
-import com.example.expensechallenge.TestcontainersConfiguration;
+import com.example.expensechallenge.AbstractWireMockIntegrationTest;
 import com.example.expensechallenge.infrastructure.treasury.TreasuryClient;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -38,23 +30,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
  * every {@link FxRateService#getRate} call reaches the circuit, regardless
  * of shared context ordering.
  */
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
-@ActiveProfiles("test")
-class FxCircuitBreakerIntegrationTest {
-
-    private static final WireMockServer wireMock = startWireMock();
-
-    private static WireMockServer startWireMock() {
-        var server = new WireMockServer(WireMockConfiguration.options().dynamicPort());
-        server.start();
-        return server;
-    }
-
-    @DynamicPropertySource
-    static void overrideProperties(DynamicPropertyRegistry registry) {
-        registry.add("treasury.base-url", wireMock::baseUrl);
-    }
+class FxCircuitBreakerIntegrationTest extends AbstractWireMockIntegrationTest {
 
     @Autowired
     FxRateService fxRateService;
@@ -64,11 +40,6 @@ class FxCircuitBreakerIntegrationTest {
 
     @Autowired
     CacheManager cacheManager;
-
-    @AfterAll
-    static void stopWireMock() {
-        wireMock.stop();
-    }
 
     @BeforeEach
     void setUp() {
