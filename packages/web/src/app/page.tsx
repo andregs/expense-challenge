@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { BackendHealthBadge } from './_components/BackendHealthBadge';
 import { LedgerTable } from './_components/LedgerTable';
 import { NewTransactionButton } from './_components/NewTransactionButton';
 import { StatsRow } from './_components/StatsRow';
@@ -12,7 +13,10 @@ export default function DashboardPage() {
           <h1>Expense Tracker</h1>
           <p>Record USD purchases. Retrieve them in any Treasury-supported currency.</p>
         </div>
-        <NewTransactionButton />
+        <div className={styles.headerEnd}>
+          <BackendHealthBadge />
+          <NewTransactionButton />
+        </div>
       </header>
 
       <StatsRow />

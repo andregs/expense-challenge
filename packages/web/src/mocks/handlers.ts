@@ -87,6 +87,24 @@ const routes = {
     },
     default: 'happy',
   },
+  healthLiveness: {
+    method: 'get',
+    path: '*/actuator/health/liveness',
+    variants: {
+      happy: () => HttpResponse.json({ status: 'UP' }),
+      serverError: () => HttpResponse.json({ status: 'DOWN' }, { status: 503 }),
+    },
+    default: 'happy',
+  },
+  healthReadiness: {
+    method: 'get',
+    path: '*/actuator/health/readiness',
+    variants: {
+      happy: () => HttpResponse.json({ status: 'UP' }),
+      serverError: () => HttpResponse.json({ status: 'DOWN' }, { status: 503 }),
+    },
+    default: 'happy',
+  },
 } as const satisfies Record<string, RouteSpec<Record<string, Resolver>>>;
 
 type Routes = typeof routes;

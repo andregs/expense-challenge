@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Card } from '@/design-system';
@@ -89,7 +90,7 @@ export function TransactionDetail({ id }: { id: string }) {
           <Button variant="ghost" onClick={handleEvict} disabled={evict.isPending}>
             {evict.isPending ? 'Evicting…' : 'Evict cached FX rates'}
           </Button>
-          <span className={`${styles.evictToast} ${toastVisible ? styles.evictToastVisible : ''}`}>
+          <span className={clsx(styles.evictToast, toastVisible && styles.evictToastVisible)}>
             Cache cleared — next conversion fetches a fresh rate.
           </span>
         </div>

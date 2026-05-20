@@ -38,9 +38,20 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
+      show-details: always
       probes:
         enabled: true
-      show-details: when_authorized
+      group:
+        # Liveness: only db is critical — if the database is unreachable the
+        # app cannot serve any request and should be restarted.
+        liveness:
+          include: livenessState, db
+          show-details: always
+        # Readiness: redis failure degrades experience (FX cache misses,
+        # every conversion hits Treasury directly) but the core API still works.
+        readiness:
+          include: readinessState, db, redis
+          show-details: always
 
 springdoc:
   api-docs:

@@ -9,7 +9,7 @@
 
 .header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
 
@@ -23,6 +23,13 @@
     color: var(--color-text-muted);
     font-size: var(--type-sm);
   }
+}
+
+.headerEnd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
 }
 
 .statsRow {
