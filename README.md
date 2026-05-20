@@ -8,7 +8,7 @@ Full-stack reference application for recording USD purchase transactions and ret
 
 ```bash
 git clone <repo-url>
-cd expense-tracker
+cd expense-challenge
 docker compose up --build
 ```
 

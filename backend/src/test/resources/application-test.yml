@@ -1,6 +1,11 @@
 spring:
   flyway:
     enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 0s
+
+server:
+  shutdown: immediate
 
 outbox:
   relay:
