@@ -24,7 +24,7 @@ describe('TransactionDetail', () => {
     renderWithProviders(<TransactionDetail id={TX_ID} />);
     await screen.findByText('Office supplies');
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'BRL');
+    await userEvent.type(screen.getByLabelText('Convert to'), 'BRL');
 
     // sampleConverted fixture: convertedAmount=640.40, currency=BRL, exchangeRate=5.123400
     await waitFor(() => {
@@ -39,7 +39,7 @@ describe('TransactionDetail', () => {
     renderWithProviders(<TransactionDetail id={TX_ID} />);
     await screen.findByText('Office supplies');
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'BRL');
+    await userEvent.type(screen.getByLabelText('Convert to'), 'BRL');
 
     expect(
       await screen.findByText(/no exchange rate available within 6 months/i),

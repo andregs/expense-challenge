@@ -104,6 +104,13 @@ public class FxRateService {
      * typo silently produces "no rate" 422 responses for the affected code.
      *
      * <p>
+     * A static allow-list is intentional: it prevents unvalidated user input
+     * from reaching the Treasury API as a filter value, which would constitute
+     * a form of injection. Only ISO 4217 codes explicitly listed here are
+     * accepted; all others are rejected with 422 before any outbound request
+     * is made.
+     *
+     * <p>
      * To add a currency: look up its row in the
      * <a href=
      * "https://fiscaldata.treasury.gov/datasets/treasury-reporting-rates-exchange/treasury-reporting-rates-of-exchange">
