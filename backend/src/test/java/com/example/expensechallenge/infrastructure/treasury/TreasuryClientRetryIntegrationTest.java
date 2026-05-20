@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.expensechallenge.AbstractWireMockIntegrationTest;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,12 @@ import org.springframework.web.client.RestClientException;
  * AOP proxy is active (plain instantiation bypasses the proxy).
  *
  * <p>Retry delay is set to 0 ms in {@code application-test.yml} to keep tests fast.
+ *
+ * <p>The circuit breaker is reset before each test: the failure tests drive
+ * multiple 5xx responses through the circuit, and without a reset those counts
+ * accumulate across classes that share the same Spring context, eventually
+ * opening the circuit and causing unrelated tests to short-circuit without
+ * ever reaching WireMock.
  */
 class TreasuryClientRetryIntegrationTest extends AbstractWireMockIntegrationTest {
 
@@ -32,9 +39,13 @@ class TreasuryClientRetryIntegrationTest extends AbstractWireMockIntegrationTest
     @Autowired
     TreasuryClient treasuryClient;
 
+    @Autowired
+    CircuitBreakerRegistry circuitBreakerRegistry;
+
     @BeforeEach
     void setUp() {
         wireMock.resetAll();
+        circuitBreakerRegistry.circuitBreaker(TreasuryClient.CIRCUIT_BREAKER_NAME).reset();
     }
 
     @Test

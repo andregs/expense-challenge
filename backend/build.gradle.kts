@@ -2,6 +2,7 @@ plugins {
 	java
 	id("org.springframework.boot") version "4.0.6"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("org.gradle.test-retry") version "1.6.4"
 }
 
 group = "com.example"
@@ -66,4 +67,9 @@ sourceSets {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// Uncomment to surface flaky integration tests during local development.
+	// retry {
+	// 	maxRetries = 3
+	// 	failOnPassedAfterRetry = true
+	// }
 }

@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -31,7 +32,13 @@ import org.springframework.test.web.servlet.MvcResult;
  * {@link DynamicPropertySource} wires the Treasury base URL into the Spring
  * context. Each test clears both the WireMock stubs and the Redis FX cache
  * so tests are fully isolated despite sharing the same application context.
+ *
+ * <p>{@code @DirtiesContext} forces a fresh context for this class — without it,
+ * {@code cacheHit_treasuryCalledOnlyOnce} flakes (~15%) because a cache PUT
+ * is intermittently invisible to the immediately following GET when other
+ * WireMock classes share the same context. Exact race not pinpointed.
  */
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class TransactionGetIntegrationTest extends AbstractWireMockIntegrationTest {
 
     @Autowired
