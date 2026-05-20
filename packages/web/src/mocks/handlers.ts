@@ -77,6 +77,16 @@ const routes = {
     },
     default: 'happy',
   },
+  evictTransactionCache: {
+    method: 'delete',
+    path: '*/api/v1/transactions/:id/cache',
+    variants: {
+      happy: () => new HttpResponse(null, { status: 204 }),
+      notFound: () =>
+        HttpResponse.json(problems.notFound, { status: 404, headers: problemHeaders }),
+    },
+    default: 'happy',
+  },
 } as const satisfies Record<string, RouteSpec<Record<string, Resolver>>>;
 
 type Routes = typeof routes;

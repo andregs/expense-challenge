@@ -156,6 +156,7 @@ class TransactionGetIntegrationTest {
     }
 
     @Test
+    // Negative complement of TransactionCacheIntegrationTest#evictCache_forcesSecondConversionToCallTreasury
     void cacheHit_treasuryCalledOnlyOnce() throws Exception {
         UUID id = seedTransaction("2026-04-15", "100.00");
         stubTreasuryRate("Brazil-Real", "5.1234", "2026-03-31");

@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.Map;
 
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -24,13 +26,16 @@ public class FxRateService {
 
     private final TreasuryClient treasuryClient;
     private final Resilience4JCircuitBreakerFactory circuitBreakerFactory;
+    private final CacheManager cacheManager;
     private final Map<String, String> currencyDescriptions;
 
     public FxRateService(TreasuryClient treasuryClient,
             Resilience4JCircuitBreakerFactory circuitBreakerFactory,
+            CacheManager cacheManager,
             JsonMapper jsonMapper) {
         this.treasuryClient = treasuryClient;
         this.circuitBreakerFactory = circuitBreakerFactory;
+        this.cacheManager = cacheManager;
         this.currencyDescriptions = loadCurrencies(jsonMapper);
     }
 
@@ -74,6 +79,21 @@ public class FxRateService {
         }
 
         return new FxRate(dto.exchangeRate(), dto.recordDate());
+    }
+
+    /**
+     * Evicts all cached FX rate entries for the quarter containing {@code date}.
+     * Each supported currency that shares the same {year, quarter} key is
+     * removed from the cache; keys that were never populated are silently skipped.
+     */
+    public void evictAllRatesForQuarter(LocalDate date) {
+        Cache cache = cacheManager.getCache(CACHE_NAME);
+        if (cache == null) return;
+        int year = date.getYear();
+        int quarter = (date.getMonthValue() - 1) / 3 + 1;
+        for (String code : currencyDescriptions.keySet()) {
+            cache.evict(code + ":" + year + ":" + quarter);
+        }
     }
 
     /**

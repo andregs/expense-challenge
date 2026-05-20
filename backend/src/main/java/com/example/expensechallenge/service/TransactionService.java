@@ -56,6 +56,12 @@ public class TransactionService {
         return ConvertedTransactionResponse.from(tx, currency, rate);
     }
 
+    public void evictFxRateCache(UUID id) {
+        PurchaseTransaction tx = transactionRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementException("Transaction not found: " + id));
+        fxRateService.evictAllRatesForQuarter(tx.transactionDate());
+    }
+
     @Transactional(readOnly = true)
     public TransactionPageResponse list(int page, int size) {
         var items = transactionRepository.findPage(size, page * size).stream()

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card } from '@/design-system';
+import { Button, Card } from '@/design-system';
 import { formatIsoDate, formatUsd } from '@/lib/format';
 import {
   TransactionApiError,
+  useEvictTransactionCache,
   useGetTransaction,
   type ConvertedTransaction,
   type Transaction,
@@ -19,6 +20,28 @@ export function TransactionDetail({ id }: { id: string }) {
   const [currency, setCurrency] = useState('');
   const queryClient = useQueryClient();
   const { data, isPending, isFetching, error } = useGetTransaction(id, currency || undefined);
+  const evict = useEvictTransactionCache(id);
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
+
+  function handleEvict() {
+    evict.mutate(undefined, {
+      onSuccess: () => {
+        setToastVisible(true);
+        if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => {
+          setToastVisible(false);
+        }, 3000);
+      },
+    });
+  }
 
   // When a conversion error clears `data`, fall back to the base transaction
   // already cached under the no-currency key so the header stays visible.
@@ -62,6 +85,14 @@ export function TransactionDetail({ id }: { id: string }) {
       <Card title="Currency conversion">
         <CurrencySelect value={currency} onChange={setCurrency} disabled={isFetching} />
         <ConversionSection currency={currency} isFetching={isFetching} data={data} error={error} />
+        <div className={styles.evictRow}>
+          <Button variant="ghost" onClick={handleEvict} disabled={evict.isPending}>
+            {evict.isPending ? 'Evicting…' : 'Evict cached FX rates'}
+          </Button>
+          <span className={`${styles.evictToast} ${toastVisible ? styles.evictToastVisible : ''}`}>
+            Cache cleared — next conversion fetches a fresh rate.
+          </span>
+        </div>
       </Card>
     </>
   );

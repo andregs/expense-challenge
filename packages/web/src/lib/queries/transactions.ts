@@ -84,6 +84,24 @@ export function useGetTransaction(id: string, currency?: string) {
 }
 
 /**
+ * Sends DELETE /api/v1/transactions/{id}/cache to evict all FX rate cache
+ * entries for the transaction's quarter. On success, invalidates the cached
+ * conversion query so the next GET fetches a fresh rate from Treasury.
+ */
+export function useEvictTransactionCache(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.DELETE('/api/v1/transactions/{id}/cache', {
+        params: { path: { id } },
+      });
+      if (error) throw new TransactionApiError(error, 0);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transaction', id] }),
+  });
+}
+
+/**
  * Posts a new transaction. On success invalidates the listing cache so the
  * dashboard and ledger refetch on next render. On 4xx/5xx throws a
  * {@link TransactionApiError} carrying the parsed problem document.

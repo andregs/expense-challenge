@@ -65,4 +65,22 @@ describe('TransactionDetail', () => {
     render(wrap(<TransactionDetail id="00000000-0000-0000-0000-000000000000" />));
     expect(await screen.findByText(/transaction not found/i)).toBeInTheDocument();
   });
+
+  it('shows an evict cached FX rates button', async () => {
+    render(wrap(<TransactionDetail id={TX_ID} />));
+    await screen.findByText('Office supplies');
+    expect(screen.getByRole('button', { name: /evict cached fx rates/i })).toBeInTheDocument();
+  });
+
+  it('shows a transient confirmation notice after the evict button is clicked', async () => {
+    render(wrap(<TransactionDetail id={TX_ID} />));
+    await screen.findByText('Office supplies');
+
+    // Toast span is always in the DOM; clicking evict applies the visible CSS class.
+    await userEvent.click(screen.getByRole('button', { name: /evict cached fx rates/i }));
+
+    const toast = await screen.findByText(/cache cleared/i);
+    expect(toast).toBeInTheDocument();
+    expect(toast.className).toMatch(/evictToastVisible/);
+  });
 });

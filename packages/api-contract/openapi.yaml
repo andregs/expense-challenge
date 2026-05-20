@@ -100,6 +100,28 @@ paths:
         '422':
           $ref: '#/components/responses/Unprocessable'
 
+  /api/v1/transactions/{id}/cache:
+    delete:
+      tags: [transactions]
+      operationId: evictTransactionCache
+      summary: Evict cached FX rates for a transaction
+      description: |
+        Removes all cached FX rate entries for the transaction's date quarter,
+        forcing the next conversion request to fetch a fresh rate from the
+        Treasury API. Returns 204 whether or not any entries were cached.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Cache entries evicted (no-op if none were cached)
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   parameters:
     PageNumber:

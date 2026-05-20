@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 
@@ -45,6 +46,8 @@ class FxRateServiceTest {
     private Resilience4JCircuitBreakerFactory circuitBreakerFactory;
     @Mock
     private CircuitBreaker circuitBreaker;
+    @Mock
+    private CacheManager cacheManager;
 
     private FxRateService service;
 
@@ -58,7 +61,7 @@ class FxRateServiceTest {
                     java.util.function.Supplier<?> supplier = inv.getArgument(0);
                     return supplier.get();
                 });
-        service = new FxRateService(treasuryClient, circuitBreakerFactory, JsonMapper.builder().build());
+        service = new FxRateService(treasuryClient, circuitBreakerFactory, cacheManager, JsonMapper.builder().build());
     }
 
     @Test

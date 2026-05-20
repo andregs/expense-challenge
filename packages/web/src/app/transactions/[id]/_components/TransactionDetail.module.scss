@@ -118,3 +118,27 @@
   font-weight: 600;
   font-size: var(--type-base);
 }
+
+.evictRow {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.evictToast {
+  font-size: var(--type-sm);
+  color: var(--color-text-muted);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 250ms ease,
+    transform 250ms ease;
+
+  &.evictToastVisible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
