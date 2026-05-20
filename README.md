@@ -131,20 +131,7 @@ Full spec: [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.
 
 ## Supported currencies
 
-10 currencies sourced from the US Treasury Reporting Rates of Exchange:
-
-| Code | Currency              |
-|------|-----------------------|
-| AUD  | Australia Dollar      |
-| BRL  | Brazil Real           |
-| CAD  | Canada Dollar         |
-| CHF  | Switzerland Franc     |
-| CNY  | China Renminbi        |
-| EUR  | Euro Zone Euro        |
-| GBP  | United Kingdom Pound  |
-| INR  | India Rupee           |
-| JPY  | Japan Yen             |
-| MXN  | Mexico Peso           |
+144 currencies sourced from the US Treasury Reporting Rates of Exchange. Full list in [`backend/src/main/resources/currencies.json`](backend/src/main/resources/currencies.json).
 
 ## Useful commands
 
