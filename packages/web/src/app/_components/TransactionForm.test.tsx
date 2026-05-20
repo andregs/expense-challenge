@@ -1,34 +1,20 @@
-import type { ReactNode } from 'react';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { mockHandlers } from '@/mocks/handlers';
 import { server } from '@/mocks/server';
+import { setupMswServer, renderWithProviders } from '@/test/msw';
 import { TransactionForm } from './TransactionForm';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => {
-    return { push, back: vi.fn() };
-  },
+  useRouter: () => ({ push, back: vi.fn() }),
 }));
 
-beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' });
-});
+setupMswServer();
 afterEach(() => {
-  server.resetHandlers();
   push.mockReset();
 });
-afterAll(() => {
-  server.close();
-});
-
-function wrap(ui: ReactNode) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
-}
 
 async function fillForm() {
   await userEvent.type(screen.getByLabelText(/description/i), 'Office supplies');
@@ -38,13 +24,13 @@ async function fillForm() {
 
 describe('TransactionForm', () => {
   it('updates the live character counter as the user types the description', async () => {
-    render(wrap(<TransactionForm />));
+    renderWithProviders(<TransactionForm />);
     await userEvent.type(screen.getByLabelText(/description/i), 'Office supplies');
     expect(screen.getByText('15/50')).toBeInTheDocument();
   });
 
   it('redirects to the new transaction detail on a successful create (default path)', async () => {
-    render(wrap(<TransactionForm />));
+    renderWithProviders(<TransactionForm />);
     await fillForm();
     await userEvent.click(screen.getByRole('button', { name: /create transaction/i }));
     await waitFor(() => {
@@ -54,7 +40,7 @@ describe('TransactionForm', () => {
 
   it('calls onSuccess with the transaction id instead of redirecting when provided', async () => {
     const onSuccess = vi.fn();
-    render(wrap(<TransactionForm onSuccess={onSuccess} />));
+    renderWithProviders(<TransactionForm onSuccess={onSuccess} />);
     await fillForm();
     await userEvent.click(screen.getByRole('button', { name: /create transaction/i }));
     await waitFor(() => {
@@ -65,7 +51,7 @@ describe('TransactionForm', () => {
 
   it('calls onCancel when Cancel is clicked and onCancel is provided', async () => {
     const onCancel = vi.fn();
-    render(wrap(<TransactionForm onCancel={onCancel} />));
+    renderWithProviders(<TransactionForm onCancel={onCancel} />);
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
@@ -73,7 +59,7 @@ describe('TransactionForm', () => {
   it('maps server validation errors onto the matching fields', async () => {
     server.use(mockHandlers.createTransaction.validationError);
 
-    render(wrap(<TransactionForm />));
+    renderWithProviders(<TransactionForm />);
     await fillForm();
     await userEvent.click(screen.getByRole('button', { name: /create transaction/i }));
 

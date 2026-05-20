@@ -1,33 +1,19 @@
-import type { ReactNode } from 'react';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, expect, it, vi } from 'vitest';
+import { screen } from '@testing-library/react';
 import { mockHandlers } from '@/mocks/handlers';
 import { server } from '@/mocks/server';
+import { setupMswServer, renderWithProviders } from '@/test/msw';
 import { LedgerTable } from './LedgerTable';
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' });
-});
-afterEach(() => {
-  server.resetHandlers();
-});
-afterAll(() => {
-  server.close();
-});
-
-function wrap(ui: ReactNode) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
-}
+setupMswServer();
 
 describe('LedgerTable', () => {
   it('renders a row per fixture transaction with a link to its detail page', async () => {
-    render(wrap(<LedgerTable />));
+    renderWithProviders(<LedgerTable />);
 
     // samplePage fixture has 3 transactions; each description is a link
     expect(await screen.findByText('Office supplies')).toBeInTheDocument();
@@ -43,13 +29,13 @@ describe('LedgerTable', () => {
 
   it('shows empty state when the page returns no items', async () => {
     server.use(mockHandlers.listTransactions.empty);
-    render(wrap(<LedgerTable />));
+    renderWithProviders(<LedgerTable />);
     expect(await screen.findByText(/no transactions recorded yet/i)).toBeInTheDocument();
   });
 
   it('shows error state on a server failure', async () => {
     server.use(mockHandlers.listTransactions.serverError);
-    render(wrap(<LedgerTable />));
+    renderWithProviders(<LedgerTable />);
     expect(await screen.findByText(/failed to load/i)).toBeInTheDocument();
   });
 });
