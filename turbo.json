@@ -35,6 +35,9 @@
     },
     "generate": {
       "outputs": ["generated/**"]
+    },
+    "clean": {
+      "cache": false
     }
   }
 }

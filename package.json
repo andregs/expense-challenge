@@ -11,12 +11,16 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "pnpm --filter @expense-challenge/web dev",
+    "dev:live": "pnpm --filter @expense-challenge/web dev:live",
+    "backend": "cd backend && SPRING_PROFILES_ACTIVE=local ./gradlew bootRun",
+    "test:backend": "cd backend && ./gradlew test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:e2e": "turbo run test:e2e",
     "generate": "turbo run generate",
+    "clean": "turbo run clean && cd backend && ./gradlew clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,scss}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml,scss}\"",
     "prepare": "husky"

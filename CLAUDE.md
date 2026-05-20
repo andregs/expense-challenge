@@ -21,14 +21,25 @@ pnpm workspaces + Turborepo at root. Backend is its own Gradle build, invoked di
 
 ## Common commands
 
+Full stack via Docker Compose:
+
+```bash
+docker compose up --build   # frontend :3000, backend :8080
+```
+
 Root (pnpm + turbo):
 
 ```bash
 pnpm install
+pnpm dev            # Next.js dev server with MSW mocking (no backend needed)
+pnpm dev:live       # Next.js dev server against a real backend (no MSW)
+pnpm backend        # Spring Boot with local profile (docker-compose infra must be up)
 pnpm build          # turbo run build across all packages
+pnpm clean          # wipe .next/, generated/ and backend/build/
 pnpm lint
 pnpm typecheck
 pnpm test           # JS/TS tests only (backend uses gradle)
+pnpm test:backend   # ./gradlew test (requires Docker for Testcontainers)
 pnpm test:coverage  # Vitest with v8 coverage, enforces thresholds in vitest.config.ts
 pnpm test:e2e       # Playwright (requires `playwright install chromium` locally)
 docker compose --profile e2e run --rm e2e   # Plug-n-play E2E in the Microsoft Playwright image
@@ -43,14 +54,24 @@ Backend — all Gradle commands must be run from `backend/` (the working directo
 
 ```bash
 cd backend
-./gradlew bootRun
+./gradlew bootRun                        # needs SPRING_PROFILES_ACTIVE=local or env vars
+SPRING_PROFILES_ACTIVE=local ./gradlew bootRun   # wires to docker-compose infra automatically
 ./gradlew test
 ./gradlew test --tests "com.example.expensechallenge.persistence.PersistenceIntegrationTest"
 ./gradlew test --tests "*PersistenceIntegrationTest.methodName"
 ./gradlew build      # compile + test + jar
 ```
 
+From root (shortcuts):
+
+```bash
+pnpm backend        # SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+pnpm test:backend   # ./gradlew test
+```
+
 Backend tests rely on Testcontainers (Docker daemon required) — see `TestcontainersConfiguration.java` and `TestExpenseChallengeApplication.java` for the shared container setup loaded via `@ServiceConnection`.
+
+The `local` Spring profile (`application-local.yml`) wires datasource, Redis and Kafka to the docker-compose defaults so no env vars are needed when running against `docker compose up -d postgres redis kafka`.
 
 ## Toolchain
 
@@ -62,13 +83,30 @@ Pinned in `.tool-versions` (use `asdf install`):
 
 ## Architecture essentials
 
+### Backend package layers
+
+```
+api/                  HTTP layer — controllers, DTOs, GlobalExceptionHandler (RFC 7807)
+service/              Business logic — TransactionService, FxRateService, OutboxWriter
+domain/               Immutable Java records — PurchaseTransaction, OutboxEvent
+infrastructure/
+  cache/              Redis CacheConfig + FxCacheConfig
+  messaging/          KafkaConfig + TransactionEventPublisher
+  persistence/        Spring Data JDBC repositories
+  treasury/           TreasuryClient (HTTP), TreasuryClientConfig, RetryConfig
+outbox/               OutboxRelay scheduler
+```
+
+### Key design points
+
 - **Persistence**: Spring Data JDBC (no JPA). Repositories under `infrastructure/persistence`. Domain records (`PurchaseTransaction`, `OutboxEvent`) under `domain/`. Schema in `src/main/resources/db/migration/V*.sql` (Flyway). UUIDs generated DB-side via `gen_random_uuid()`.
 - **Money**: `BigDecimal` end-to-end, `NUMERIC(19,4)` in Postgres, `HALF_UP` rounding to 2dp only at response boundary.
 - **Transactional outbox**: writes to `purchase_transactions` and `outbox_events` (status `PENDING`) happen in the same DB tx. Scheduled relay (`outbox.relay.*` config) publishes to Kafka topic `purchase.transactions.created` then flips to `PUBLISHED`. Outbox payload is plain TEXT (no JSONB) — never queried by content.
 - **FX lookup rule**: most recent Treasury rate with `record_date ≤ transactionDate` and within prior 6 months. No qualifying rate → `422 Unprocessable Entity`.
 - **FX cache**: Redis cache-aside, long TTL (rates immutable once published). Key pattern `fx_rate:{currency}:{year}:{quarter}` (see solution design).
-- **Treasury client**: base URL + timeouts under `treasury.*` config; WireMock used in tests.
-- **API contract first**: edit `packages/api-contract/openapi.yaml`, then `pnpm --filter @expense-challenge/api-contract generate` to refresh TS types. Backend controllers and frontend types both bind to this spec.
+- **Treasury resilience**: `TreasuryClient` is annotated `@Retryable` (Spring Retry). `FxRateService` wraps calls in a Resilience4j circuit breaker (`treasury` instance configured in `application.yml`). Retry fires first; circuit breaker counts failures across retries.
+- **API contract first**: edit `packages/api-contract/openapi.yaml`, then `pnpm generate` to refresh TS types. Backend controllers and frontend types both bind to this spec.
+- **React Query hooks**: live in `packages/web/src/lib/queries/` (`health.ts`, `transactions.ts`). All mutations/queries go through these hooks, not raw `apiClient` calls from components.
 
 ## Conventions
 

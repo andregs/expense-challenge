@@ -16,6 +16,7 @@
     "generated"
   ],
   "scripts": {
+    "clean": "rm -rf generated",
     "generate": "openapi-typescript ./openapi.yaml -o ./generated/types.ts",
     "build": "pnpm generate",
     "lint": "echo \"(api-contract has no source to lint)\"",
