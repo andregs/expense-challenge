@@ -1,9 +1,9 @@
 package com.example.expensechallenge.service;
 
+import com.example.expensechallenge.api.dto.MoneyFormatter;
 import com.example.expensechallenge.domain.OutboxEvent;
 import com.example.expensechallenge.domain.PurchaseTransaction;
 import com.example.expensechallenge.infrastructure.persistence.OutboxEventRepository;
-import java.math.RoundingMode;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +28,7 @@ public class OutboxWriter {
             tx.id().toString(),
             tx.description(),
             tx.transactionDate().toString(),
-            tx.purchaseAmountUsd().setScale(2, RoundingMode.HALF_UP).toPlainString()
+            MoneyFormatter.format(tx.purchaseAmountUsd())
         );
         String json = jsonMapper.writeValueAsString(payload);
         outboxEventRepository.save(OutboxEvent.pending(tx.id(), EVENT_TYPE, json));

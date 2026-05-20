@@ -2,6 +2,27 @@
 
 Full-stack reference application for recording USD purchase transactions and retrieving them converted into any currency reported by the [US Treasury Reporting Rates of Exchange](https://fiscaldata.treasury.gov/datasets/treasury-reporting-rates-exchange/treasury-reporting-rates-of-exchange) API.
 
+## Quickstart
+
+**Only prerequisite: Docker.**
+
+```bash
+git clone <repo-url>
+cd expense-tracker
+docker compose up --build
+```
+
+| Service    | URL                                          |
+|------------|----------------------------------------------|
+| Frontend   | <http://localhost:3000>                      |
+| Backend    | <http://localhost:8080>                      |
+| Swagger UI | <http://localhost:8080/swagger-ui.html>      |
+| Health     | <http://localhost:8080/actuator/health>      |
+
+That's it. No local Java, Node, or database setup — everything runs in containers.
+
+> The rest of this document is for developers who want to explore the solution further: running services individually, executing tests, or working on the codebase locally.
+
 ## Architecture
 
 ```mermaid
@@ -66,20 +87,7 @@ asdf plugin add nodejs && asdf plugin add pnpm && asdf plugin add java
 asdf install
 ```
 
-## Quickstart
-
-### Full stack
-
-```bash
-docker compose up --build
-```
-
-| Service    | URL                                          |
-|------------|----------------------------------------------|
-| Frontend   | <http://localhost:3000>                      |
-| Backend    | <http://localhost:8080>                      |
-| Swagger UI | <http://localhost:8080/swagger-ui.html>      |
-| Health     | <http://localhost:8080/actuator/health>      |
+## Local development
 
 ### Frontend only (no backend needed — uses MSW mocks)
 
