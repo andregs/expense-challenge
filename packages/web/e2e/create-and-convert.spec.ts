@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * Golden-path flow: open the new-transaction form, submit it, land on the
- * detail page, then convert the amount to BRL.
+ * Golden-path flow: open the new-transaction modal from the dashboard,
+ * submit it, land on the detail page, then convert the amount to BRL.
  *
  * Works in both modes:
  *  • NEXT_PUBLIC_API_MOCKING=enabled — all API calls handled by MSW; data
@@ -14,7 +14,10 @@ import { expect, test } from '@playwright/test';
  * test validates both modes without branching.
  */
 test('creates a transaction and converts it to BRL', async ({ page }) => {
-  await page.goto('/transactions/new');
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /new transaction/i }).click();
+  await expect(page.getByRole('dialog', { name: /new transaction/i })).toBeVisible();
 
   await page.getByLabel(/description/i).fill('Office supplies');
   await page.getByLabel(/transaction date/i).fill('2024-01-15');

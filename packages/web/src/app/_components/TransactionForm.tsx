@@ -27,6 +27,11 @@ const initial: FormState = {
   purchaseAmountUsd: '',
 };
 
+interface TransactionFormProps {
+  onSuccess?: (id: string) => void;
+  onCancel?: () => void;
+}
+
 /**
  * Maps the server's RFC 7807 `errors[]` array onto field-keyed messages so
  * each {@link FormField} can show its own inline error. Falls back to the
@@ -46,7 +51,7 @@ function partitionProblemErrors(error: TransactionApiError): {
   return { fieldErrors, formError: hasField ? null : error.problem.title };
 }
 
-export function TransactionForm() {
+export function TransactionForm({ onSuccess, onCancel }: TransactionFormProps) {
   const router = useRouter();
   const mutation = useCreateTransaction();
   const [values, setValues] = useState<FormState>(initial);
@@ -73,7 +78,11 @@ export function TransactionForm() {
       },
       {
         onSuccess: (tx) => {
-          router.push(`/transactions/${tx.id}`);
+          if (onSuccess) {
+            onSuccess(tx.id);
+          } else {
+            router.push(`/transactions/${tx.id}`);
+          }
         },
       },
     );
@@ -155,7 +164,11 @@ export function TransactionForm() {
           type="button"
           variant="ghost"
           onClick={() => {
-            router.back();
+            if (onCancel) {
+              onCancel();
+            } else {
+              router.back();
+            }
           }}
         >
           Cancel

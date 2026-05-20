@@ -43,13 +43,31 @@ describe('TransactionForm', () => {
     expect(screen.getByText('15/50')).toBeInTheDocument();
   });
 
-  it('redirects to the new transaction detail on a successful create', async () => {
+  it('redirects to the new transaction detail on a successful create (default path)', async () => {
     render(wrap(<TransactionForm />));
     await fillForm();
     await userEvent.click(screen.getByRole('button', { name: /create transaction/i }));
     await waitFor(() => {
       expect(push).toHaveBeenCalledWith('/transactions/11111111-1111-4111-8111-111111111111');
     });
+  });
+
+  it('calls onSuccess with the transaction id instead of redirecting when provided', async () => {
+    const onSuccess = vi.fn();
+    render(wrap(<TransactionForm onSuccess={onSuccess} />));
+    await fillForm();
+    await userEvent.click(screen.getByRole('button', { name: /create transaction/i }));
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
+    });
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('calls onCancel when Cancel is clicked and onCancel is provided', async () => {
+    const onCancel = vi.fn();
+    render(wrap(<TransactionForm onCancel={onCancel} />));
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   it('maps server validation errors onto the matching fields', async () => {
